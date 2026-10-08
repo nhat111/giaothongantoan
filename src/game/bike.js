@@ -88,11 +88,21 @@ export function bikeShift(engine, dir) {
       engine.penalty('wrongway', false);
       return;
     }
+    // không có xe đỗ phía trước thì không cần ra giữa làn: nhắc nhẹ, không trừ sao
+    if (!parkedAhead(b)) {
+      engine.toast('Phía trước không có xe đỗ, bé không cần ra giữa làn. Cứ đi sát lề phải nhé.');
+      return;
+    }
     if (engine.time > b.lookBackUntil) {
       engine.penalty('nolookback', false);
       return;
     }
-    if (vehicleBehindThreat(engine, b)) {
+    const v = vehicleBehindThreat(engine, b);
+    if (v && v.v <= 0.4) {
+      engine.toast('Ngay bên cạnh bé đang có xe dừng. Chờ xe đó đi lên trước rồi mới ra.');
+      return;
+    }
+    if (v) {
       engine.penalty('closeback', false);
       return;
     }
@@ -105,6 +115,10 @@ export function bikeShift(engine, dir) {
     }
     tryTurn(engine, b);
   }
+}
+
+function parkedAhead(b) {
+  return b.parked.some((p) => p.x - front(b) < 3.5 && p.x + p.len > back(b));
 }
 
 function gateRange(engine) {
@@ -146,7 +160,10 @@ export function bikeLook(engine) {
 
 export function bikeFinishLook(engine) {
   const b = engine.bike;
-  if (vehicleBehindThreat(engine, b)) engine.toast('Có xe đang tới phía sau. Chờ xe đi qua rồi quan sát lại.', 'bad');
+  const v = vehicleBehindThreat(engine, b);
+  if (!parkedAhead(b)) engine.toast('Quan sát tốt! Phía trước không có xe đỗ nên bé cứ đi sát lề phải.', 'good');
+  else if (v && v.v <= 0.4) engine.toast('Ngay bên cạnh bé đang có xe dừng. Chờ xe đó đi lên trước.');
+  else if (v) engine.toast('Có xe đang tới phía sau. Chờ xe đi qua rồi quan sát lại.', 'bad');
   else engine.toast('Phía sau không có xe tới gần. Bé có thể ra giữa làn để tránh, xong thì vào lại sát lề.', 'good');
 }
 
