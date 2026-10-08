@@ -26,3 +26,4 @@ engine.on((type, p) => {
 });
 
 engine.load(0);
+useGame.setState({ overlay: 'menu', menuFrom: null });

@@ -46,7 +46,13 @@ export class Engine {
     this.vid = 0;
     this.vehVersion = 0;
     this.levelVersion = 0;
+    // số sao cao nhất mỗi bài, lưu trên máy để lần sau mở lại vẫn còn
     this.totalStars = [];
+    try {
+      this.totalStars = JSON.parse(localStorage.getItem('bestStars') || '[]');
+    } catch {
+      /* bỏ qua */
+    }
     this.held = null;
   }
 
@@ -123,6 +129,17 @@ export class Engine {
     this.vehVersion++;
     this.emit('level', { idx: i });
     this.emit('stars', this.stars);
+  }
+
+  // tạm dừng khi mở danh sách bài, chơi tiếp khi đóng
+  pause() {
+    this.pausedRunning = this.running;
+    this.running = false;
+    this.release();
+  }
+  resume() {
+    if (this.pausedRunning) this.running = true;
+    this.pausedRunning = false;
   }
 
   start() {
@@ -422,6 +439,11 @@ export class Engine {
   win() {
     this.running = false;
     this.totalStars[this.levelIdx] = Math.max(this.totalStars[this.levelIdx] || 0, this.stars);
+    try {
+      localStorage.setItem('bestStars', JSON.stringify(this.totalStars));
+    } catch {
+      /* bỏ qua */
+    }
     this.emit('win', {
       stars: this.stars,
       lessons: [...this.mistakes].map((m) => (this.bike ? BIKE_LESSON[m] || LESSON[m] : LESSON[m])),

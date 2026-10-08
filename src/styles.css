@@ -130,3 +130,21 @@ button.look .ico, button.signal .ico { font-size: 24px; line-height: 1; }
   .toast { top: calc(env(safe-area-inset-top, 0px) + 100px); font-size: 17px; }
   .rules { top: calc(env(safe-area-inset-top, 0px) + 100px); }
 }
+
+/* danh sách bài */
+.sheet.menu { max-width: 560px; }
+.menu-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.levels { display: grid; gap: 10px; }
+.level-card {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px;
+  text-align: left; background: #f3f7fc; border: 2px solid var(--line); box-shadow: 0 3px 0 #c4d6ec; padding: 10px 14px;
+}
+.level-card.current { border-color: var(--blue); background: #eaf2ff; }
+.lv-ico { font-size: 34px; line-height: 1; }
+.lv-text { display: grid; gap: 2px; min-width: 0; }
+.lv-name { font-family: var(--body); font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.lv-title { font-size: 18px; line-height: 1.2; }
+.level-card .stars { font-size: 20px; letter-spacing: 0; }
+.level-card .stars .off { color: #d0d9e6; text-shadow: none; }
+@media (max-width: 520px) { .hud { gap: 6px; } .hud button.ghost { padding: 6px 10px; font-size: 15px; } }
+.pill, .hud button { white-space: nowrap; }

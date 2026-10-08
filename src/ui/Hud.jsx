@@ -87,6 +87,18 @@ export function TopBar() {
               {speechOn ? '🔊' : '🔇'}
             </button>
           )}
+          <button
+            className="ghost"
+            onClick={() => {
+              unlockAudio();
+              const st = useGame.getState();
+              if (st.overlay === 'menu') return;
+              engine.pause();
+              useGame.setState({ overlay: 'menu', menuFrom: st.overlay });
+            }}
+          >
+            Chọn bài
+          </button>
           <button className="ghost" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
             Luật
           </button>
@@ -386,6 +398,15 @@ function WinSheet({ win, levelIdx }) {
         <button className="ghost" onClick={() => engine.load(levelIdx)}>
           Chơi lại bài này
         </button>
+        <button
+          className="ghost"
+          onClick={() => {
+            unlockAudio();
+            useGame.setState({ overlay: 'menu', menuFrom: 'win' });
+          }}
+        >
+          Chọn bài khác
+        </button>
       </div>
     </div>
   );
@@ -411,9 +432,69 @@ export function VoiceHint() {
   );
 }
 
+const cardTitle = (t) => {
+  const x = t.replace(/^Đi xe đạp:\s*/, '');
+  return x.charAt(0).toUpperCase() + x.slice(1);
+};
+
+// Danh sách bài: bé chọn bài nào cũng được, không phải chơi lần lượt
+function LevelMenu() {
+  const { levelIdx, menuFrom, levelVersion } = useGame();
+  const best = engine.totalStars;
+  const said =
+    'Bé chọn bài muốn chơi. ' + LEVELS.map((L, i) => L.name + ': ' + (L.mode === 'bike' ? 'đi xe đạp, ' : 'đi bộ, ') + L.title + '.').join(' ');
+  useAutoSpeak(said, [levelVersion]);
+  const canClose = menuFrom !== undefined && menuFrom !== 'menu' && levelVersion > 1;
+  return (
+    <div className="overlay">
+      <div className="sheet menu">
+        <div className="menu-head">
+          <h2>Chọn bài</h2>
+          <Say text={said} label="Nghe danh sách bài" />
+        </div>
+        <div className="levels">
+          {LEVELS.map((L, i) => (
+            <button
+              key={i}
+              className={'level-card' + (i === levelIdx && canClose ? ' current' : '')}
+              onClick={() => {
+                unlockAudio();
+                stopSpeech();
+                engine.load(i);
+              }}
+            >
+              <span className="lv-ico" aria-hidden="true">{L.mode === 'bike' ? '🚲' : '🚶'}</span>
+              <span className="lv-text">
+                <span className="lv-name">
+                  {L.name} · {L.mode === 'bike' ? 'Đi xe đạp' : 'Đi bộ'}
+                </span>
+                <span className="lv-title">{cardTitle(L.title)}</span>
+              </span>
+              <Stars n={best[i] || 0} />
+            </button>
+          ))}
+        </div>
+        {canClose && (
+          <button
+            className="ghost"
+            onClick={() => {
+              unlockAudio();
+              useGame.setState({ overlay: menuFrom || null });
+              engine.resume();
+            }}
+          >
+            Quay lại bài đang chơi
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function Overlay() {
   const { overlay, win, levelIdx } = useGame();
   if (!overlay) return null;
+  if (overlay === 'menu') return <LevelMenu />;
   const L = LEVELS[levelIdx];
   if (overlay === 'intro' && L.mode === 'bike') return <PrepIntro key={levelIdx + ':' + useGame.getState().levelVersion} L={L} />;
   if (overlay === 'intro') return <WalkIntro key={levelIdx + ':' + useGame.getState().levelVersion} L={L} />;
