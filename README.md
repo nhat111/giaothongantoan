@@ -26,6 +26,17 @@ Ghi chú về luật: theo Luật Trật tự, an toàn giao thông đường b�
 (thêm một trẻ dưới 7 tuổi thì tối đa hai), phải đi hàng một, đi bên phải, không buông cả hai tay, không dùng điện thoại khi đang đi.
 Mũ bảo hiểm chỉ bắt buộc với xe đạp máy, nên trong game mũ bảo hiểm được dạy như một thói quen an toàn, không phải luật.
 
+## Đọc to cho bé chưa biết chữ
+
+Game đọc to bằng giọng tiếng Việt có sẵn trên máy (Web Speech API), không cần mạng hay file âm thanh:
+hướng dẫn mỗi bài, mọi lời nhắc trong lúc chơi, các thẻ chuẩn bị trước khi đi xe đạp, và màn hình kết quả.
+
+- Nút 🔊 trên thanh trên cùng để bật / tắt đọc to (máy nhớ lựa chọn).
+- Nút **Nghe hướng dẫn** trên màn hình đầu bài, chạm vào lời nhắc để nghe lại.
+- iPhone / iPad có sẵn giọng Linh. Android dùng giọng Google tiếng Việt. Máy tính Windows / Mac có thể phải cài thêm giọng tiếng Việt;
+  nếu máy chưa có, game hiện hướng dẫn cài.
+- Trình duyệt chỉ cho đọc sau khi bé chạm màn hình lần đầu, nên màn hình đầu tiên cần chạm nút **Nghe hướng dẫn**.
+
 ## Chạy trên máy
 
 ```bash

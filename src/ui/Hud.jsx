@@ -2,7 +2,46 @@ import { useEffect, useState } from 'react';
 import { engine } from '../game/engine.js';
 import { LEVELS } from '../game/levels.js';
 import { useGame } from './store.js';
-import { unlockAudio } from './sound.js';
+import { unlockAudio as unlockSound } from './sound.js';
+import { speak, stopSpeech, primeSpeech, setSpeechOn, speechSupported, hasVietnameseVoice } from './speech.js';
+
+function unlockAudio() {
+  unlockSound();
+  primeSpeech();
+}
+
+// Nút loa nhỏ: chạm để nghe đọc to đoạn chữ bên cạnh
+function Say({ text, label = 'Nghe đọc', big = false }) {
+  if (!speechSupported) return null;
+  return (
+    <button
+      type="button"
+      className={big ? 'say big' : 'say'}
+      aria-label={label}
+      title={label}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        unlockAudio();
+        speak(text, { force: true });
+      }}
+    >
+      🔊{big && <span>{label}</span>}
+    </button>
+  );
+}
+
+// Tự đọc khi màn hình hiện ra (nếu trình duyệt cho phép, tức là bé đã chạm màn hình trước đó)
+function useAutoSpeak(text, deps) {
+  useEffect(() => {
+    const active = navigator.userActivation ? navigator.userActivation.hasBeenActive : false;
+    if (active) {
+      const t = setTimeout(() => speak(text), 350);
+      return () => clearTimeout(t);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+}
 
 function Stars({ n, big }) {
   return (
@@ -17,7 +56,7 @@ function Stars({ n, big }) {
 }
 
 export function TopBar() {
-  const { levelIdx, stars } = useGame();
+  const { levelIdx, stars, speechOn } = useGame();
   const [open, setOpen] = useState(() => window.innerWidth > 720);
   const L = LEVELS[levelIdx];
   return (
@@ -31,6 +70,23 @@ export function TopBar() {
             {L.name} / {LEVELS.length}
           </span>
           <Stars n={stars} />
+          {speechSupported && (
+            <button
+              className={'ghost sound ' + (speechOn ? 'on' : 'off')}
+              aria-pressed={speechOn}
+              aria-label={speechOn ? 'Tắt đọc to' : 'Bật đọc to'}
+              title={speechOn ? 'Đang đọc to. Chạm để tắt.' : 'Đang tắt đọc to. Chạm để bật.'}
+              onClick={() => {
+                unlockAudio();
+                const on = !speechOn;
+                setSpeechOn(on);
+                useGame.setState({ speechOn: on });
+                if (on) speak('Đã bật đọc to.');
+              }}
+            >
+              {speechOn ? '🔊' : '🔇'}
+            </button>
+          )}
           <button className="ghost" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
             Luật
           </button>
@@ -39,7 +95,9 @@ export function TopBar() {
       {open && (
         <aside className="rules">
           <span className="label">Luật của bài</span>
-          <h3>{L.title}</h3>
+          <h3>
+            {L.title} <Say text={L.title + '. ' + L.rules.join(' ')} label="Nghe luật" />
+          </h3>
           <ol>
             {L.rules.map((r) => (
               <li key={r}>{r}</li>
@@ -57,13 +115,27 @@ export function Toast() {
   useEffect(() => {
     if (!toast) return setShown(null);
     setShown(toast);
-    const t = setTimeout(() => setShown((s) => (s && s.id === toast.id ? null : s)), (toast.dur || 3.6) * 1000);
+    // để thông báo hiện đủ lâu cho giọng đọc đọc hết
+    const ms = Math.max((toast.dur || 3.6) * 1000, toast.text.length * 85);
+    const t = setTimeout(() => setShown((s) => (s && s.id === toast.id ? null : s)), ms);
     return () => clearTimeout(t);
   }, [toast]);
   if (!shown) return null;
   return (
-    <div className={'toast ' + (shown.kind || '')} role="status" key={shown.id}>
-      {shown.text}
+    <div
+      className={'toast ' + (shown.kind || '')}
+      role="status"
+      key={shown.id}
+      onClick={() => {
+        unlockAudio();
+        speak(shown.text, { force: true });
+      }}
+      title="Chạm để nghe lại"
+    >
+      <span className="toast-icon" aria-hidden="true">
+        {shown.kind === 'bad' ? '✋' : shown.kind === 'good' ? '👍' : '💬'}
+      </span>
+      <span>{shown.text}</span>
     </div>
   );
 }
@@ -149,11 +221,13 @@ export function Controls() {
             engine.doLook();
           }}
         >
+          <span className="ico" aria-hidden="true">👀</span>
           Quan sát
           <small>{bike ? 'nhìn phía sau' : 'nhìn trái, nhìn phải'}</small>
         </button>
         {bike && L.turnIntoGate && (
           <button className="signal" onClick={() => engine.signal()}>
+            <span className="ico" aria-hidden="true">✋</span>
             Xin rẽ phải
             <small>giơ tay phải</small>
           </button>
@@ -171,16 +245,26 @@ function PrepIntro({ L }) {
   const [sel, setSel] = useState(() => new Set());
   // trộn thứ tự cố định để mục đúng và sai xen kẽ nhau
   const order = [0, 2, 1, 3].filter((i) => i < L.prep.length);
-  const toggle = (i) =>
+  const toggle = (i) => {
+    unlockAudio();
+    const willSelect = !sel.has(i);
+    speak((willSelect ? 'Bé chọn: ' : 'Bỏ chọn: ') + L.prep[i].text);
     setSel((s) => {
       const n = new Set(s);
       n.has(i) ? n.delete(i) : n.add(i);
       return n;
     });
+  };
+  const intro =
+    L.title + '. ' + L.goal + ' Trước khi lên xe, bé chọn những việc nên làm. ' +
+    order.map((i, k) => 'Thẻ ' + (k + 1) + ': ' + L.prep[i].text + '.').join(' ') +
+    ' Chọn xong thì bấm nút Lên xe màu xanh.';
+  useAutoSpeak(intro, [L]);
   return (
     <div className="overlay">
       <div className="sheet">
         <span className="label">{L.name} · Đi xe đạp</span>
+        <Say text={intro} label="Nghe hướng dẫn" big />
         <h2>{L.title}</h2>
         <p>{L.goal}</p>
         <div className="prep">
@@ -188,7 +272,8 @@ function PrepIntro({ L }) {
           {order.map((i) => (
             <label key={i} className={sel.has(i) ? 'on' : ''}>
               <input type="checkbox" checked={sel.has(i)} onChange={() => toggle(i)} />
-              {L.prep[i].text}
+              <span className="pic" aria-hidden="true">{L.prep[i].icon}</span>
+              <span>{L.prep[i].text}</span>
             </label>
           ))}
         </div>
@@ -205,6 +290,7 @@ function PrepIntro({ L }) {
           className="primary"
           onClick={() => {
             unlockAudio();
+            stopSpeech();
             useGame.setState({ overlay: null });
             engine.startBike(sel);
           }}
@@ -216,49 +302,59 @@ function PrepIntro({ L }) {
   );
 }
 
-export function Overlay() {
-  const { overlay, win, levelIdx } = useGame();
-  if (!overlay) return null;
-  const L = LEVELS[levelIdx];
-  if (overlay === 'intro' && L.mode === 'bike') return <PrepIntro key={levelIdx + ':' + useGame.getState().levelVersion} L={L} />;
-  if (overlay === 'intro')
-    return (
-      <div className="overlay">
-        <div className="sheet">
-          <span className="label">{L.name}</span>
-          <h2>{L.title}</h2>
-          <p>{L.goal}</p>
-          <ol>
-            {L.rules.map((r) => (
-              <li key={r}>{r}</li>
-            ))}
-          </ol>
-          <p className="keys">
-            Máy tính: phím mũi tên để đi, phím cách (Space) để quan sát. Điện thoại, máy tính bảng: dùng các nút ở góc dưới màn hình.
-          </p>
-          <button
-            className="primary"
-            autoFocus
-            onClick={() => {
-              unlockAudio();
-              useGame.setState({ overlay: null });
-              engine.start();
-            }}
-          >
-            Bắt đầu
-          </button>
-        </div>
+const PARENT_NOTE = 'Lưu ý cho bố mẹ: ngoài đời, trẻ dưới 7 tuổi khi qua đường phải có người lớn dắt tay.';
+
+function WalkIntro({ L }) {
+  const intro = L.title + '. ' + L.goal + ' ' + L.rules.join(' ') + ' Bấm nút Bắt đầu màu xanh để chơi.';
+  useAutoSpeak(intro, [L]);
+  return (
+    <div className="overlay">
+      <div className="sheet">
+        <span className="label">{L.name}</span>
+        <Say text={intro} label="Nghe hướng dẫn" big />
+        <h2>{L.title}</h2>
+        <p>{L.goal}</p>
+        <ol>
+          {L.rules.map((r) => (
+            <li key={r}>{r}</li>
+          ))}
+        </ol>
+        <p className="keys">{PARENT_NOTE}</p>
+        <p className="keys">
+          Máy tính: phím mũi tên để đi, phím cách (Space) để quan sát. Điện thoại, máy tính bảng: dùng các nút ở góc dưới màn hình.
+        </p>
+        <button
+          className="primary"
+          autoFocus
+          onClick={() => {
+            unlockAudio();
+            stopSpeech();
+            useGame.setState({ overlay: null });
+            engine.start();
+          }}
+        >
+          Bắt đầu
+        </button>
       </div>
-    );
+    </div>
+  );
+}
+
+function WinSheet({ win, levelIdx }) {
   const head =
     win.stars === 3
       ? 'Giỏi quá! Bé đi đúng luật suốt cả đoạn đường.'
       : win.stars > 0
       ? 'Bé đã đến trường. Lần sau nhớ thêm:'
       : 'Bé đã đến trường, nhưng cần luyện thêm. Nhớ nhé:';
+  const said =
+    'Đến trường rồi! Bé được ' + win.stars + ' sao. ' + head + ' ' + win.lessons.join(' ') +
+    (win.last ? ' Tổng cộng ' + win.total + ' trên ' + win.max + ' sao.' : ' Bấm nút màu xanh để chơi bài tiếp theo.');
+  useAutoSpeak(said, [win]);
   return (
     <div className="overlay">
       <div className="sheet">
+        <Say text={said} label="Nghe lại" big />
         <h2>Đến trường rồi!</h2>
         <Stars n={win.stars} big />
         <p>{head}</p>
@@ -274,10 +370,17 @@ export function Overlay() {
             <strong>
               Tổng cộng: {win.total} / {win.max} sao.
             </strong>{' '}
-            Bé đã học xong cách đi bộ an toàn đến trường.
+            Bé đã học xong cách đi bộ và đi xe đạp an toàn đến trường.
           </p>
         )}
-        <button className="primary" autoFocus onClick={() => engine.load(win.last ? 0 : levelIdx + 1)}>
+        <button
+          className="primary"
+          autoFocus
+          onClick={() => {
+            unlockAudio();
+            engine.load(win.last ? 0 : levelIdx + 1);
+          }}
+        >
           {win.last ? 'Chơi lại từ đầu' : 'Bài tiếp theo'}
         </button>
         <button className="ghost" onClick={() => engine.load(levelIdx)}>
@@ -286,4 +389,33 @@ export function Overlay() {
       </div>
     </div>
   );
+}
+
+export function VoiceHint() {
+  const speechOn = useGame((s) => s.speechOn);
+  const [missing, setMissing] = useState(false);
+  useEffect(() => {
+    if (!speechSupported) return;
+    const t = setTimeout(() => setMissing(!hasVietnameseVoice()), 1500);
+    return () => clearTimeout(t);
+  }, []);
+  if (!speechOn || !missing) return null;
+  return (
+    <div className="voice-hint">
+      Máy này chưa có giọng đọc tiếng Việt nên có thể đọc sai hoặc không đọc. Điện thoại: vào Cài đặt, mục Trợ năng (hoặc Chuyển văn bản thành giọng nói),
+      tải giọng Tiếng Việt.
+      <button className="ghost small" onClick={() => setMissing(false)}>
+        Đã hiểu
+      </button>
+    </div>
+  );
+}
+
+export function Overlay() {
+  const { overlay, win, levelIdx } = useGame();
+  if (!overlay) return null;
+  const L = LEVELS[levelIdx];
+  if (overlay === 'intro' && L.mode === 'bike') return <PrepIntro key={levelIdx + ':' + useGame.getState().levelVersion} L={L} />;
+  if (overlay === 'intro') return <WalkIntro key={levelIdx + ':' + useGame.getState().levelVersion} L={L} />;
+  return <WinSheet win={win} levelIdx={levelIdx} />;
 }

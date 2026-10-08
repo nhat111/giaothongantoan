@@ -3,7 +3,7 @@ import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
 import { engine } from './game/engine.js';
 import { World } from './scene/World.jsx';
-import { TopBar, Toast, Controls, Overlay } from './ui/Hud.jsx';
+import { TopBar, Toast, Controls, Overlay, VoiceHint } from './ui/Hud.jsx';
 import './ui/store.js';
 
 export default function App() {
@@ -23,6 +23,7 @@ export default function App() {
       <Toast />
       <Controls />
       <Overlay />
+      <VoiceHint />
     </div>
   );
 }

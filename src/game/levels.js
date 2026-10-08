@@ -88,10 +88,10 @@ export const LEVELS = [
       'Đến cổng trường: bóp phanh, dừng xe sát lề.'
     ],
     prep: [
-      { text: 'Đội mũ bảo hiểm', good: true, why: 'Mũ bảo hiểm bảo vệ đầu khi lỡ bị ngã.' },
-      { text: 'Kiểm tra phanh và lốp xe', good: true, why: 'Phanh hỏng thì không dừng kịp.' },
-      { text: 'Đeo tai nghe nghe nhạc cho vui', good: false, why: 'Đeo tai nghe sẽ không nghe được tiếng còi xe.' },
-      { text: 'Chở thêm hai bạn ngồi phía sau', good: false, why: 'Xe đạp chỉ được chở một người.' }
+      { icon: '⛑️', text: 'Đội mũ bảo hiểm', good: true, why: 'Mũ bảo hiểm bảo vệ đầu khi lỡ bị ngã.' },
+      { icon: '🔧', text: 'Kiểm tra phanh và lốp xe', good: true, why: 'Phanh hỏng thì không dừng kịp.' },
+      { icon: '🎧', text: 'Đeo tai nghe nghe nhạc cho vui', good: false, why: 'Đeo tai nghe sẽ không nghe được tiếng còi xe.' },
+      { icon: '👫', text: 'Chở thêm hai bạn ngồi phía sau', good: false, why: 'Xe đạp chỉ được chở một người.' }
     ],
     signals: [true],
     runnerChance: 0,
@@ -117,10 +117,10 @@ export const LEVELS = [
       'Không sang làn bên kia: đó là làn xe ngược chiều.'
     ],
     prep: [
-      { text: 'Đội mũ bảo hiểm', good: true, why: 'Mũ bảo hiểm bảo vệ đầu khi lỡ bị ngã.' },
-      { text: 'Chọn xe đạp vừa người, ngồi lên chân chạm được đất', good: true, why: 'Xe quá to thì khó giữ thăng bằng và khó dừng.' },
-      { text: 'Cầm điện thoại xem bản đồ khi đạp xe', good: false, why: 'Không dùng điện thoại khi đang đi xe.' },
-      { text: 'Đi hàng ba cùng các bạn cho vui', good: false, why: 'Xe đạp phải đi hàng một.' }
+      { icon: '⛑️', text: 'Đội mũ bảo hiểm', good: true, why: 'Mũ bảo hiểm bảo vệ đầu khi lỡ bị ngã.' },
+      { icon: '🚲', text: 'Chọn xe đạp vừa người, ngồi lên chân chạm được đất', good: true, why: 'Xe quá to thì khó giữ thăng bằng và khó dừng.' },
+      { icon: '📱', text: 'Cầm điện thoại xem bản đồ khi đạp xe', good: false, why: 'Không dùng điện thoại khi đang đi xe.' },
+      { icon: '🚲🚲🚲', text: 'Đi hàng ba cùng các bạn cho vui', good: false, why: 'Xe đạp phải đi hàng một.' }
     ],
     signals: [false],
     runnerChance: 0,
