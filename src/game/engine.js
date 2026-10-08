@@ -1,4 +1,5 @@
 import { LEVELS } from './levels.js';
+import { initBike, updateBike, bikeShift, bikeLook, bikeFinishLook, bikeSignal, bikeBlockS, checkPrep, BIKE_MSG, BIKE_LESSON } from './bike.js';
 
 export const TILE = 2.6; // mét mỗi ô
 export const EXT = 12; // số ô đường kéo dài ra ngoài bản đồ mỗi bên (chỗ xe xuất hiện / biến mất)
@@ -23,6 +24,7 @@ const MSG = {
   runner: 'Đèn xanh nhưng có xe vượt đèn đỏ! Dù đèn xanh vẫn phải nhìn hai bên trước khi bước xuống.',
   hit: 'Suýt va chạm! Bé quay lại vỉa hè. Chỉ đi khi không có xe tới gần.'
 };
+const WALK_HIT = MSG.hit;
 
 export const LESSON = {
   road: 'Luôn đi trên vỉa hè, không đi dưới lòng đường.',
@@ -114,6 +116,8 @@ export class Engine {
     this.hinted = new Set();
     this.running = false;
     this.held = null;
+    this.mode = L.mode || 'walk';
+    this.bike = this.mode === 'bike' ? initBike(this) : null;
     for (let k = 0; k < 400; k++) this.stepTraffic(0.05);
     this.levelVersion++;
     this.vehVersion++;
@@ -175,12 +179,14 @@ export class Engine {
     this.lanes.forEach((lane) => {
       const vs = lane.vs.sort((a, b) => b.s - a.s);
       const redStop = lane.road.signaled && !this.carsMayGo(lane.road);
-      const kidStop = lane.road.signaled && this.kidOnZebraOf(lane.road);
+      const kidStop = lane.road.signaled && !this.bike && this.kidOnZebraOf(lane.road);
+      const bikeS = bikeBlockS(this, lane, EXT);
       vs.forEach((v, i) => {
         let limit = Infinity;
         if (i > 0) limit = vs[i - 1].s - vs[i - 1].len - 0.35;
         const stopHere = (redStop && !v.runner) || kidStop;
         if (stopHere && v.s <= lane.stopS + 0.05) limit = Math.min(limit, lane.stopS);
+        if (bikeS !== null && v.s <= bikeS + 0.05) limit = Math.min(limit, bikeS);
         const room = limit - v.s;
         const target = Math.min(v.speed, Math.max(0, room) * 2.2);
         v.v += (target - v.v) * Math.min(1, dt * (target < v.v ? 6 : 1.4));
@@ -227,10 +233,11 @@ export class Engine {
     this.stars = Math.max(0, this.stars - 1);
     this.mistakes.add(kind);
     this.emit('stars', this.stars);
-    this.toast(MSG[kind], 'bad', 4);
+    const text = this.bike ? (kind === 'hit' ? BIKE_MSG.hit : BIKE_MSG[kind] || MSG[kind]) : kind === 'hit' ? WALK_HIT : MSG[kind];
+    this.toast(text, 'bad', 4);
     this.busyUntil = this.time + 1.2;
     this.kid.shake = this.time;
-    if (kind === 'close' || kind === 'hit' || kind === 'runner') this.emit('honk');
+    if (kind === 'close' || kind === 'hit' || kind === 'runner' || kind === 'closeback' || kind === 'center') this.emit('honk');
     if (sendBack) {
       const k = this.kid;
       k.c = k.pc = k.lastSafe.c;
@@ -256,11 +263,38 @@ export class Engine {
   }
 
   press(dx, dy) {
+    if (this.bike) {
+      if (dx > 0) this.bike.pedal = true;
+      if (dx < 0) this.bike.brake = true;
+      if (dy !== 0) bikeShift(this, -dy);
+      this.held = { dx, dy };
+      return;
+    }
     this.held = { dx, dy };
     this.tryMove(dx, dy);
   }
-  release() {
-    this.held = null;
+  // release(): thả hết; release(dx, dy): chỉ thả phím tương ứng
+  release(dx, dy) {
+    if (this.bike) {
+      if (dx === undefined || dx > 0) this.bike.pedal = false;
+      if (dx === undefined || dx < 0) this.bike.brake = false;
+    }
+    if (dx === undefined || (this.held && this.held.dx === dx && this.held.dy === dy)) this.held = null;
+  }
+  signal() {
+    if (this.bike) bikeSignal(this);
+  }
+  // bắt đầu bài xe đạp sau khi bé chọn đồ chuẩn bị
+  startBike(selected) {
+    const wrong = checkPrep(this.level, selected);
+    this.bike.helmet = this.level.prep.some((it, i) => it.good && /mũ bảo hiểm/i.test(it.text) && selected.has(i));
+    this.running = true;
+    if (wrong.length) {
+      this.stars = Math.max(0, this.stars - 1);
+      this.mistakes.add('prep');
+      this.emit('stars', this.stars);
+      this.toast(wrong.join(' '), 'bad', 7);
+    } else this.toast(this.level.goal, '', 5);
   }
 
   tryMove(dx, dy) {
@@ -339,6 +373,7 @@ export class Engine {
   }
 
   doLook() {
+    if (this.bike) return bikeLook(this);
     if (!this.running || this.time < this.busyUntil || this.kid.t < 1) return;
     if (this.lookView && this.time - this.lookView.start < LOOK_TIME) return;
     const road = this.roads.find((r) => this.nearCurbOf(r));
@@ -389,7 +424,7 @@ export class Engine {
     this.totalStars[this.levelIdx] = Math.max(this.totalStars[this.levelIdx] || 0, this.stars);
     this.emit('win', {
       stars: this.stars,
-      lessons: [...this.mistakes].map((m) => LESSON[m]),
+      lessons: [...this.mistakes].map((m) => (this.bike ? BIKE_LESSON[m] || LESSON[m] : LESSON[m])),
       last: this.levelIdx === LEVELS.length - 1,
       total: this.totalStars.reduce((a, b) => a + (b || 0), 0),
       max: LEVELS.length * 3
@@ -405,8 +440,13 @@ export class Engine {
       k.walk += dt;
     }
     if (this.pendingLook && this.time >= this.pendingLook.at) {
-      this.finishLook(this.pendingLook.road);
+      if (this.pendingLook.bike) bikeFinishLook(this);
+      else this.finishLook(this.pendingLook.road);
       this.pendingLook = null;
+    }
+    if (this.bike) {
+      updateBike(this, dt, EXT);
+      return;
     }
     if (!this.running) return;
     this.hazardCheck();

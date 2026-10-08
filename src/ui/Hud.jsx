@@ -74,8 +74,17 @@ const DIRS = [
   ['r', 1, 0, '▶', 'Sang phải'],
   ['d', 0, 1, '▼', 'Đi xuống']
 ];
+const BIKE_DIRS = [
+  ['u', 0, -1, '▲', 'Ra giữa làn', 'Ra giữa'],
+  ['l', -1, 0, '◀', 'Bóp phanh', 'Phanh'],
+  ['r', 1, 0, '▶', 'Đạp xe', 'Đạp'],
+  ['d', 0, 1, '▼', 'Vào sát lề hoặc rẽ vào', 'Vào lề']
+];
 
 export function Controls() {
+  const levelIdx = useGame((s) => s.levelIdx);
+  const L = LEVELS[levelIdx];
+  const bike = L.mode === 'bike';
   useEffect(() => {
     const keys = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0], w: [0, -1], s: [0, 1], a: [-1, 0], d: [1, 0] };
     const down = (e) => {
@@ -83,6 +92,10 @@ export function Controls() {
       if (e.key === ' ') {
         e.preventDefault();
         engine.doLook();
+        return;
+      }
+      if (e.key === 'x' || e.key === 'X') {
+        engine.signal();
         return;
       }
       const k = keys[e.key] || keys[e.key.toLowerCase()];
@@ -93,7 +106,7 @@ export function Controls() {
     };
     const up = (e) => {
       const k = keys[e.key] || keys[e.key.toLowerCase()];
-      if (k && engine.held && engine.held.dx === k[0] && engine.held.dy === k[1]) engine.release();
+      if (k) engine.release(k[0], k[1]);
     };
     const blur = () => engine.release();
     addEventListener('keydown', down);
@@ -108,7 +121,7 @@ export function Controls() {
   return (
     <div className="controls">
       <div className="dpad" aria-label="Di chuyển">
-        {DIRS.map(([cls, dx, dy, ch, label]) => (
+        {(bike ? BIKE_DIRS : DIRS).map(([cls, dx, dy, ch, label, cap]) => (
           <button
             key={cls}
             className={cls}
@@ -118,12 +131,13 @@ export function Controls() {
               unlockAudio();
               engine.press(dx, dy);
             }}
-            onPointerUp={() => engine.release()}
-            onPointerLeave={() => engine.release()}
-            onPointerCancel={() => engine.release()}
+            onPointerUp={() => engine.release(dx, dy)}
+            onPointerLeave={() => engine.release(dx, dy)}
+            onPointerCancel={() => engine.release(dx, dy)}
             onContextMenu={(e) => e.preventDefault()}
           >
             {ch}
+            {cap && <small>{cap}</small>}
           </button>
         ))}
       </div>
@@ -136,10 +150,66 @@ export function Controls() {
           }}
         >
           Quan sát
-          <small>nhìn trái, nhìn phải</small>
+          <small>{bike ? 'nhìn phía sau' : 'nhìn trái, nhìn phải'}</small>
         </button>
+        {bike && L.turnIntoGate && (
+          <button className="signal" onClick={() => engine.signal()}>
+            Xin rẽ phải
+            <small>giơ tay phải</small>
+          </button>
+        )}
         <button className="ghost small" onClick={() => engine.load(engine.levelIdx)}>
           Chơi lại bài
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Bé chọn những việc nên làm trước khi đi xe đạp
+function PrepIntro({ L }) {
+  const [sel, setSel] = useState(() => new Set());
+  // trộn thứ tự cố định để mục đúng và sai xen kẽ nhau
+  const order = [0, 2, 1, 3].filter((i) => i < L.prep.length);
+  const toggle = (i) =>
+    setSel((s) => {
+      const n = new Set(s);
+      n.has(i) ? n.delete(i) : n.add(i);
+      return n;
+    });
+  return (
+    <div className="overlay">
+      <div className="sheet">
+        <span className="label">{L.name} · Đi xe đạp</span>
+        <h2>{L.title}</h2>
+        <p>{L.goal}</p>
+        <div className="prep">
+          <strong>Trước khi lên xe, bé chọn những việc nên làm:</strong>
+          {order.map((i) => (
+            <label key={i} className={sel.has(i) ? 'on' : ''}>
+              <input type="checkbox" checked={sel.has(i)} onChange={() => toggle(i)} />
+              {L.prep[i].text}
+            </label>
+          ))}
+        </div>
+        <ol>
+          {L.rules.map((r) => (
+            <li key={r}>{r}</li>
+          ))}
+        </ol>
+        <p className="keys">
+          Máy tính: → đạp, ← phanh, ↑ ra giữa làn, ↓ vào sát lề{L.turnIntoGate ? ' / rẽ vào cổng' : ''}, Space quan sát phía sau
+          {L.turnIntoGate ? ', X xin rẽ phải' : ''}. Điện thoại: dùng các nút trên màn hình.
+        </p>
+        <button
+          className="primary"
+          onClick={() => {
+            unlockAudio();
+            useGame.setState({ overlay: null });
+            engine.startBike(sel);
+          }}
+        >
+          Lên xe
         </button>
       </div>
     </div>
@@ -150,6 +220,7 @@ export function Overlay() {
   const { overlay, win, levelIdx } = useGame();
   if (!overlay) return null;
   const L = LEVELS[levelIdx];
+  if (overlay === 'intro' && L.mode === 'bike') return <PrepIntro key={levelIdx + ':' + useGame.getState().levelVersion} L={L} />;
   if (overlay === 'intro')
     return (
       <div className="overlay">

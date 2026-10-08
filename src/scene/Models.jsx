@@ -124,7 +124,7 @@ export function Bus({ color, wheelRefs }) {
 }
 
 // Bé học sinh: áo trắng, quần xanh, khăn quàng đỏ, cặp sách. Mặt hướng về +z.
-export const Kid = forwardRef(function Kid({ legs, arms, head }, ref) {
+export const Kid = forwardRef(function Kid({ legs, arms, head, helmet = false }, ref) {
   const skin = mat('#f0c39b');
   const shirt = mat('#fbfbf8');
   const pants = mat('#1f2f5c');
@@ -165,10 +165,91 @@ export const Kid = forwardRef(function Kid({ legs, arms, head }, ref) {
         <mesh geometry={sphereGeo(0.158)} position={[0, 0.03, -0.025]} scale={[1, 0.92, 1]} material={mat('#2a1d14', { roughness: 0.9 })} />
         <mesh geometry={sphereGeo(0.02, 8, 6)} position={[-0.05, 0.0, 0.135]} material={mat('#111')} />
         <mesh geometry={sphereGeo(0.02, 8, 6)} position={[0.05, 0.0, 0.135]} material={mat('#111')} />
+        {helmet && (
+          <group>
+            <mesh geometry={HELMET_GEO} position={[0, 0.03, -0.01]} material={mat('#ff8a00', { roughness: 0.35 })} castShadow />
+            <Box s={[0.2, 0.025, 0.08]} p={[0, 0.08, 0.15]} m={mat('#222')} />
+            <Box s={[0.02, 0.16, 0.02]} p={[-0.12, -0.08, 0.04]} m={mat('#222')} />
+            <Box s={[0.02, 0.16, 0.02]} p={[0.12, -0.08, 0.04]} m={mat('#222')} />
+          </group>
+        )}
       </group>
     </group>
   );
 });
+
+const HELMET_GEO = new THREE.SphereGeometry(0.175, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2);
+
+// Ống nối hai điểm (dùng cho khung xe đạp)
+function Tube({ a, b, r = 0.022, m }) {
+  const { pos, quat, len } = useMemo(() => {
+    const A = new THREE.Vector3(...a), B = new THREE.Vector3(...b);
+    const d = B.clone().sub(A);
+    const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.clone().normalize());
+    return { pos: A.clone().add(B).multiplyScalar(0.5), quat: q, len: d.length() };
+  }, [a, b]);
+  return <mesh geometry={cylGeo(r, r, len, 8)} position={pos} quaternion={quat} material={m} castShadow />;
+}
+
+// Xe đạp mini có giỏ phía trước. Đầu xe hướng về +x, dài ~1.8m.
+export function Bicycle({ wheelRefs, crankRef, color = '#1f8fd6' }) {
+  const frame = mat(color, { roughness: 0.35, metalness: 0.4 });
+  const dark = mat('#1b1b1b', { roughness: 0.8 });
+  const steel = chrome();
+  const Wh = ({ x, i }) => (
+    <group position={[x, 0.33, 0]} ref={wheelRefs?.[i]}>
+      <mesh castShadow>
+        <torusGeometry args={[0.31, 0.035, 8, 28]} />
+        <primitive object={tire()} attach="material" />
+      </mesh>
+      {[0, 1, 2, 3].map((k) => (
+        <Box key={k} s={[0.6, 0.008, 0.008]} r={[0, 0, (k * Math.PI) / 4]} m={steel} />
+      ))}
+      <mesh geometry={cylGeo(0.04, 0.04, 0.1, 10)} rotation={[Math.PI / 2, 0, 0]} material={steel} />
+    </group>
+  );
+  return (
+    <group>
+      <Wh x={0.55} i={0} />
+      <Wh x={-0.55} i={1} />
+      <Tube a={[-0.16, 0.8, 0]} b={[0.38, 0.84, 0]} m={frame} />
+      <Tube a={[0.38, 0.8, 0]} b={[0.02, 0.36, 0]} r={0.028} m={frame} />
+      <Tube a={[-0.16, 0.82, 0]} b={[0.02, 0.36, 0]} m={frame} />
+      <Tube a={[0.02, 0.36, 0.05]} b={[-0.55, 0.33, 0.05]} r={0.015} m={frame} />
+      <Tube a={[0.02, 0.36, -0.05]} b={[-0.55, 0.33, -0.05]} r={0.015} m={frame} />
+      <Tube a={[-0.16, 0.82, 0.04]} b={[-0.55, 0.33, 0.04]} r={0.013} m={frame} />
+      <Tube a={[-0.16, 0.82, -0.04]} b={[-0.55, 0.33, -0.04]} r={0.013} m={frame} />
+      <Tube a={[0.38, 0.84, 0.04]} b={[0.55, 0.33, 0.04]} r={0.016} m={steel} />
+      <Tube a={[0.38, 0.84, -0.04]} b={[0.55, 0.33, -0.04]} r={0.016} m={steel} />
+      <Tube a={[0.38, 0.84, 0]} b={[0.34, 1.02, 0]} r={0.02} m={steel} />
+      <Box s={[0.05, 0.04, 0.52]} p={[0.32, 1.02, 0]} m={steel} />
+      <Box s={[0.06, 0.05, 0.1]} p={[0.32, 1.02, 0.27]} m={dark} />
+      <Box s={[0.06, 0.05, 0.1]} p={[0.32, 1.02, -0.27]} m={dark} />
+      <Tube a={[-0.16, 0.8, 0]} b={[-0.19, 0.9, 0]} r={0.018} m={steel} />
+      <Box s={[0.26, 0.06, 0.14]} p={[-0.2, 0.93, 0]} m={dark} />
+      {/* giỏ xe */}
+      <group position={[0.58, 0.88, 0]}>
+        <Box s={[0.3, 0.02, 0.36]} p={[0, -0.12, 0]} m={mat('#e8e8e8', { metalness: 0.5 })} />
+        {[[0.15, 0, 0], [-0.15, 0, 0]].map(([x], k) => (
+          <Box key={k} s={[0.015, 0.24, 0.36]} p={[x, 0, 0]} m={mat('#e8e8e8', { metalness: 0.5 })} />
+        ))}
+        {[0.18, -0.18].map((z, k) => (
+          <Box key={'z' + k} s={[0.3, 0.24, 0.015]} p={[0, 0, z]} m={mat('#e8e8e8', { metalness: 0.5 })} />
+        ))}
+      </group>
+      {/* đùi đĩa + bàn đạp */}
+      <group position={[0.02, 0.36, 0]} ref={crankRef}>
+        <mesh geometry={cylGeo(0.09, 0.09, 0.03, 16)} rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0.07]} material={steel} />
+        <Box s={[0.32, 0.03, 0.02]} p={[0, 0, 0.1]} m={steel} />
+        <Box s={[0.32, 0.03, 0.02]} p={[0, 0, -0.1]} m={steel} />
+        <Box s={[0.08, 0.025, 0.1]} p={[0.16, 0, 0.15]} m={dark} />
+        <Box s={[0.08, 0.025, 0.1]} p={[-0.16, 0, -0.15]} m={dark} />
+      </group>
+      {/* chắn bùn + đèn hậu */}
+      <Box s={[0.04, 0.05, 0.03]} p={[-0.82, 0.52, 0]} m={mat('#ff3030', { emissive: '#a00000', emissiveIntensity: 0.9 })} />
+    </group>
+  );
+}
 
 export function useWheelSpin() {
   return useMemo(() => Array.from({ length: 6 }, () => ({ current: null })), []);

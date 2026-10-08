@@ -10,6 +10,8 @@ vỉa hè, nhà ống, xe máy, đèn tín hiệu có đếm ngược, vạch k�
 | 1 | Qua đường có đèn tín hiệu | Đi trên vỉa hè, sang đường ở vạch kẻ, chờ đèn người đi bộ màu xanh, không đi khi đèn xanh nhấp nháy |
 | 2 | Qua đường không có đèn | Dừng ở mép vỉa hè, nhìn trái, nhìn phải, chỉ đi khi không có xe tới gần |
 | 3 | Cả đoạn đường đến trường | Kết hợp cả hai, và vẫn phải quan sát khi đèn xanh vì có xe vượt đèn đỏ |
+| 4 | Đi xe đạp: sát lề phải, dừng đèn đỏ | Chuẩn bị trước khi đi (mũ bảo hiểm, kiểm tra phanh, không đeo tai nghe, không chở quá một người), đi sát lề phải, dừng trước vạch khi đèn đỏ hoặc vàng |
+| 5 | Đi xe đạp: tránh xe đỗ, xin đường rẽ | Quan sát phía sau trước khi ra giữa làn tránh xe đỗ, vào lại sát lề, không sang làn ngược chiều, giơ tay xin rẽ và đi chậm trước khi rẽ |
 
 Nút **Quan sát** chuyển camera sang góc mắt của bé và quay trái, rồi quay phải, để bé tập thói quen nhìn hai bên như ngoài đường thật.
 Bé sai luật thì bị trừ sao và nhận lời nhắc; không có cảnh tai nạn.
@@ -18,6 +20,11 @@ Bé sai luật thì bị trừ sao và nhận lời nhắc; không có cảnh ta
 
 - Máy tính: phím mũi tên (hoặc W A S D) để đi, phím cách (Space) để quan sát.
 - Điện thoại / máy tính bảng: nút mũi tên ở góc trái dưới, nút **Quan sát** ở góc phải dưới.
+- Bài xe đạp: → đạp, ← bóp phanh, ↑ ra giữa làn, ↓ vào sát lề (hoặc rẽ vào cổng), Space quan sát phía sau, X xin rẽ phải.
+
+Ghi chú về luật: theo Luật Trật tự, an toàn giao thông đường bộ 2024, người đi xe đạp chỉ được chở một người
+(thêm một trẻ dưới 7 tuổi thì tối đa hai), phải đi hàng một, đi bên phải, không buông cả hai tay, không dùng điện thoại khi đang đi.
+Mũ bảo hiểm chỉ bắt buộc với xe đạp máy, nên trong game mũ bảo hiểm được dạy như một thói quen an toàn, không phải luật.
 
 ## Chạy trên máy
 
@@ -40,6 +47,7 @@ Mở địa chỉ mà Vite in ra (thường là http://localhost:5173).
 src/
   game/levels.js     Bản đồ các bài (dạng lưới chữ cái) + luật hiển thị cho bé
   game/engine.js     Luật chơi: xe cộ, đèn tín hiệu, kiểm tra lỗi, chấm sao. Không phụ thuộc vào đồ hoạ.
+  game/bike.js       Luật riêng cho các bài đi xe đạp
   scene/             Đồ hoạ 3D (React Three Fiber): nhà phố, đường, xe, bé, camera
   ui/                Giao diện: thanh trên cùng, nút điều khiển, thông báo, màn hình bắt đầu/kết thúc
 ```

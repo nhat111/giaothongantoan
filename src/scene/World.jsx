@@ -5,6 +5,7 @@ import { BuildingRow } from './Buildings.jsx';
 import { Road, Sidewalk, Planter, PowerLine, SidewalkProps, CrossingSign, Ground } from './Street.jsx';
 import { Vehicles, Signals, KidActor, CameraRig, Sun, GoalMarker, FlashTile } from './Dynamic.jsx';
 import { makeCoords } from './common.jsx';
+import { BikeActor, ParkedCars } from './BikeScene.jsx';
 
 function EngineDriver({ engine }) {
   useFrame((_, dt) => engine.update(Math.min(dt, 0.05)));
@@ -43,7 +44,7 @@ function StaticWorld({ engine }) {
         return null;
       })}
       {engine.roads
-        .filter((road) => !road.signaled)
+        .filter((road) => !road.signaled && road.zc >= 0)
         .map((road) => (
           <group key={'sign' + road.index}>
             <CrossingSign x={wx(road.zc) - 0.4} z={wz(road.rows[1] + 1) + 0.45} faceZ={1} />
@@ -68,7 +69,14 @@ export function World({ engine }) {
         <StaticWorld engine={engine} />
         <Signals engine={engine} />
         <Vehicles engine={engine} />
-        <KidActor engine={engine} />
+        {engine.bike ? (
+          <>
+            <BikeActor engine={engine} />
+            <ParkedCars engine={engine} />
+          </>
+        ) : (
+          <KidActor engine={engine} />
+        )}
         <GoalMarker engine={engine} />
         <FlashTile engine={engine} />
         <CameraRig engine={engine} />

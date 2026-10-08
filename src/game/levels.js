@@ -75,5 +75,68 @@ export const LEVELS = [
       '...............',
       'BBBBBBBBHBBBBBB'
     ]
+  },
+  {
+    name: 'Bài 4',
+    mode: 'bike',
+    title: 'Đi xe đạp: sát lề phải, dừng đèn đỏ',
+    goal: 'Bé đạp xe đến trường. Trường ở cùng phía, cuối đoạn đường. Đi sát lề phải và dừng đúng vạch khi gặp đèn đỏ.',
+    rules: [
+      'Nên đội mũ bảo hiểm để bảo vệ đầu.',
+      'Đi sát mép đường bên phải, đi hàng một.',
+      'Đèn đỏ, đèn vàng: dừng xe trước vạch dừng.',
+      'Đến cổng trường: bóp phanh, dừng xe sát lề.'
+    ],
+    prep: [
+      { text: 'Đội mũ bảo hiểm', good: true, why: 'Mũ bảo hiểm bảo vệ đầu khi lỡ bị ngã.' },
+      { text: 'Kiểm tra phanh và lốp xe', good: true, why: 'Phanh hỏng thì không dừng kịp.' },
+      { text: 'Đeo tai nghe nghe nhạc cho vui', good: false, why: 'Đeo tai nghe sẽ không nghe được tiếng còi xe.' },
+      { text: 'Chở thêm hai bạn ngồi phía sau', good: false, why: 'Xe đạp chỉ được chở một người.' }
+    ],
+    signals: [true],
+    runnerChance: 0,
+    traffic: { min: 1.2, max: 2.6, types: ['moto', 'moto', 'moto', 'car', 'moto'] },
+    map: [
+      'BBBBBBBBBBBBBBBBBBBBBBBBBB',
+      '..........................',
+      'rrrrrrrrrrrrrrrrzrrrrrrrrr',
+      'rrrrrrrrrrrrrrrrzrrrrrrrrr',
+      '..........................',
+      'BHBBBBBBBBBBBBBBBBBBBBBSBB'
+    ]
+  },
+  {
+    name: 'Bài 5',
+    mode: 'bike',
+    title: 'Đi xe đạp: tránh xe đỗ, xin đường rẽ',
+    goal: 'Trên đường có xe đỗ sát lề. Bé phải quan sát phía sau trước khi tránh, rồi giơ tay xin rẽ phải vào cổng trường.',
+    rules: [
+      'Gặp xe đỗ sát lề: quan sát phía sau trước.',
+      'Chỉ ra giữa làn khi phía sau không có xe tới gần. Tránh xong thì vào lại sát lề.',
+      'Muốn rẽ phải: giơ tay phải xin đường, đi chậm lại rồi mới rẽ.',
+      'Không sang làn bên kia: đó là làn xe ngược chiều.'
+    ],
+    prep: [
+      { text: 'Đội mũ bảo hiểm', good: true, why: 'Mũ bảo hiểm bảo vệ đầu khi lỡ bị ngã.' },
+      { text: 'Chọn xe đạp vừa người, ngồi lên chân chạm được đất', good: true, why: 'Xe quá to thì khó giữ thăng bằng và khó dừng.' },
+      { text: 'Cầm điện thoại xem bản đồ khi đạp xe', good: false, why: 'Không dùng điện thoại khi đang đi xe.' },
+      { text: 'Đi hàng ba cùng các bạn cho vui', good: false, why: 'Xe đạp phải đi hàng một.' }
+    ],
+    signals: [false],
+    runnerChance: 0,
+    turnIntoGate: true,
+    parked: [
+      { x: 8, len: 1.75, color: '#f2f2f0' },
+      { x: 15, len: 1.75, color: '#9c2121' }
+    ],
+    traffic: { min: 1.8, max: 3.6, types: ['moto', 'moto', 'moto', 'car', 'moto'] },
+    map: [
+      'BBBBBBBBBBBBBBBBBBBBBBBBBB',
+      '..........................',
+      'rrrrrrrrrrrrrrrrrrrrrrrrrr',
+      'rrrrrrrrrrrrrrrrrrrrrrrrrr',
+      '..........................',
+      'BHBBBBBBBBBBBBBBBBBBBBSBBB'
+    ]
   }
 ];

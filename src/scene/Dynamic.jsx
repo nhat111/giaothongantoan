@@ -5,6 +5,7 @@ import { TILE, LOOK_TIME } from '../game/engine.js';
 import { mat, Box, cylGeo, sphereGeo, SW, makeCoords, tileHeight } from './common.jsx';
 import { makePedSignalCanvas } from './textures.js';
 import { Moto, Car, Bus, Kid, useWheelSpin } from './Models.jsx';
+import { bikeCamera, bikePose } from './BikeScene.jsx';
 
 // ---------- xe cộ ----------
 function Vehicle({ engine, v }) {
@@ -12,14 +13,24 @@ function Vehicle({ engine, v }) {
   const wheels = useWheelSpin();
   const { wx, wz } = makeCoords(engine);
   const lane = v.lane;
-  const lateral = v.type === 'moto' ? (v.seed - 0.5) * 1.0 : 0;
+  // Bài xe đạp: xe trong làn của bé chạy lệch về phía tim đường để vượt bé an toàn,
+  // và lách thêm ra khi đi ngang xe đang đỗ.
+  const bikeLane = engine.bike && engine.bike.lane === lane;
+  const lateral = bikeLane ? (v.type === 'moto' ? -0.35 - v.seed * 0.3 : -0.45) : v.type === 'moto' ? (v.seed - 0.5) * 1.0 : 0;
   const z = wz(lane.row + 0.5) + lateral;
+  const dodge = useRef(0);
   const r = v.type === 'bus' ? 0.5 : v.type === 'car' ? 0.33 : 0.27;
-  useFrame(() => {
+  useFrame((_, dt) => {
     const g = ref.current;
     if (!g) return;
     const x = engine.vx(lane, v) + v.len / 2;
-    g.position.set(wx(x), 0, z);
+    let want = 0;
+    if (bikeLane) {
+      const nearParked = engine.bike.parked.some((p) => x + v.len / 2 > p.x - 0.8 && x - v.len / 2 < p.x + p.len + 0.3);
+      if (nearParked) want = v.type === 'moto' ? -0.35 : -0.75;
+    }
+    dodge.current += (want - dodge.current) * Math.min(1, dt * 4);
+    g.position.set(wx(x), 0, z + dodge.current);
     const spin = -(v.dist * TILE) / r;
     wheels.forEach((w) => w.current && (w.current.rotation.z = spin));
   });
@@ -184,6 +195,21 @@ export function CameraRig({ engine }) {
     const px = wx(c + 0.5), pz = wz(r + 0.5);
     const py = tileHeight(engine.tile(k.c, k.r));
     let camPos, target, rate = 3.5;
+    if (engine.bike) {
+      const out = { pos: new THREE.Vector3(), target: new THREE.Vector3(), rate: 4 };
+      bikeCamera(engine, out);
+      if (first.current) {
+        pos.current.copy(out.pos);
+        look.current.copy(out.target);
+        first.current = false;
+      }
+      const f = 1 - Math.exp(-dt * out.rate);
+      pos.current.lerp(out.pos, f);
+      look.current.lerp(out.target, f);
+      camera.position.copy(pos.current);
+      camera.lookAt(look.current);
+      return;
+    }
     const lv = engine.lookView;
     const lt = lv ? engine.time - lv.start : 99;
     if (lv && lt < LOOK_TIME) {
@@ -231,7 +257,12 @@ export function Sun({ engine }) {
   }, [scene, target]);
   useFrame(() => {
     const k = engine.kid;
-    const x = wx(k.c + 0.5), z = wz(k.r + 0.5);
+    let x = wx(k.c + 0.5), z = wz(k.r + 0.5);
+    if (engine.bike) {
+      const p = bikePose(engine);
+      x = p.x + 8;
+      z = p.z;
+    }
     target.position.set(x, 0, z);
     if (light.current) {
       light.current.position.set(x + 18, 32, z + 12);
@@ -262,7 +293,8 @@ export function GoalMarker({ engine }) {
   const ring = useRef();
   const arrow = useRef();
   const { wx, wz } = makeCoords(engine);
-  const x = wx(engine.goal.c + 0.5), z = wz(engine.goal.r + 0.5);
+  let x = wx(engine.goal.c + 0.5), z = wz(engine.goal.r + 0.5);
+  if (engine.bike && !engine.bike.turn) z = wz(engine.bike.row + 0.5) + 0.85; // dừng xe sát lề trước cổng
   useFrame((s) => {
     const t = s.clock.elapsedTime;
     if (ring.current) ring.current.scale.setScalar(1 + Math.sin(t * 3) * 0.08);

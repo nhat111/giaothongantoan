@@ -22,13 +22,14 @@ export function Road({ engine, road }) {
   const yellow = mat('#f2c230', { roughness: 0.6 });
   const zx0 = wx(road.zc), zx1 = wx(road.zc + 1);
 
+  const hasZebra = road.zc >= 0;
   const dashes = [];
   for (let x = -half; x < half; x += 3.2) {
-    if (x + 1.8 > zx0 - 0.8 && x < zx1 + 0.8) continue;
+    if (hasZebra && x + 1.8 > zx0 - 0.8 && x < zx1 + 0.8) continue;
     dashes.push(x + 0.9);
   }
   const stripes = [];
-  for (let z = z0 + 0.35; z < z1 - 0.2; z += 0.9) stripes.push(z + 0.22);
+  if (hasZebra) for (let z = z0 + 0.35; z < z1 - 0.2; z += 0.9) stripes.push(z + 0.22);
 
   return (
     <group>
@@ -48,8 +49,8 @@ export function Road({ engine, road }) {
         <Box key={'z' + i} s={[zx1 - zx0 - 0.3, 0.012, 0.45]} p={[(zx0 + zx1) / 2, 0.007, z]} m={white} receive />
       ))}
       {/* vạch dừng xe */}
-      <Box s={[0.3, 0.012, zMid - z0 - 0.3]} p={[zx1 + 0.9, 0.007, (z0 + zMid) / 2]} m={white} />
-      <Box s={[0.3, 0.012, z1 - zMid - 0.3]} p={[zx0 - 0.9, 0.007, (zMid + z1) / 2]} m={white} />
+      {hasZebra && <Box s={[0.3, 0.012, zMid - z0 - 0.3]} p={[zx1 + 0.35, 0.007, (z0 + zMid) / 2]} m={white} />}
+      {hasZebra && <Box s={[0.3, 0.012, z1 - zMid - 0.3]} p={[zx0 - 0.35, 0.007, (zMid + z1) / 2]} m={white} />}
       {/* nắp cống */}
       {[-14, 9, 22].map((x, i) => (
         <mesh key={'m' + i} position={[x, 0.008, zMid + (i % 2 ? 0.8 : -0.8)]} rotation={[-Math.PI / 2, 0, 0]}>
