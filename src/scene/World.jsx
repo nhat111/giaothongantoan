@@ -5,6 +5,8 @@ import { BuildingRow } from './Buildings.jsx';
 import { Road, Sidewalk, Planter, PowerLine, SidewalkProps, CrossingSign, Ground } from './Street.jsx';
 import { Vehicles, Signals, KidActor, CameraRig, Sun, GoalMarker, FlashTile } from './Dynamic.jsx';
 import { makeCoords } from './common.jsx';
+import { Baked } from './bake.jsx';
+import { QUALITY } from '../quality.js';
 import { BikeActor, ParkedCars } from './BikeScene.jsx';
 import { ParentActor, BusStop, EventProps } from './EventScene.jsx';
 
@@ -17,7 +19,7 @@ function StaticWorld({ engine }) {
   const { wx, wz } = makeCoords(engine);
   const rows = engine.grid.map((row, r) => ({ r, kind: row.some((t) => t === 'r' || t === 'z') ? 'road' : row[0] === 'B' ? 'B' : row.includes('p') ? 'p' : '.' }));
   return (
-    <group>
+    <Baked>
       <Ground />
       {engine.roads.map((road) => (
         <Road key={'road' + road.index} engine={engine} road={road} />
@@ -38,7 +40,8 @@ function StaticWorld({ engine }) {
             <group key={r}>
               <Sidewalk engine={engine} row={r} />
               <SidewalkProps engine={engine} row={r} />
-              {(roadAbove || roadBelow) && <PowerLine engine={engine} row={r} side={roadAbove ? wz(r) + 0.35 : wz(r + 1) - 0.35} />}
+              {/* cột điện chỉ dựng ở vỉa hè phía xa (bài đi bộ) để không che tầm nhìn của camera */}
+              {(roadBelow || (roadAbove && engine.bike)) && <PowerLine engine={engine} row={r} side={roadAbove ? wz(r) + 0.35 : wz(r + 1) - 0.35} />}
             </group>
           );
         }
@@ -52,7 +55,7 @@ function StaticWorld({ engine }) {
             <CrossingSign x={wx(road.zc + 1) + 0.4} z={wz(road.rows[0]) - 0.45} faceZ={-1} />
           </group>
         ))}
-    </group>
+    </Baked>
   );
 }
 
@@ -61,10 +64,15 @@ export function World({ engine }) {
   return (
     <>
       <EngineDriver engine={engine} />
-      <Sky sunPosition={[60, 45, 30]} turbidity={6} rayleigh={1.2} mieCoefficient={0.006} mieDirectionalG={0.85} />
-      <fog attach="fog" args={['#cfdbe2', 40, 135]} />
-      <hemisphereLight args={['#dbe9ff', '#7a6e5c', 0.9]} />
-      <ambientLight intensity={0.15} />
+      {QUALITY.sky ? (
+        <Sky sunPosition={[60, 45, 30]} turbidity={5} rayleigh={1.0} mieCoefficient={0.005} mieDirectionalG={0.85} />
+      ) : (
+        <color attach="background" args={['#bcd8ee']} />
+      )}
+      <fog attach="fog" args={['#cfe0ec', 38, 120]} />
+      {/* ánh sáng buổi sáng: trời xanh nhạt, mặt đất ấm; không có bóng thật thì tăng ánh sáng trời cho đỡ phẳng */}
+      <hemisphereLight args={['#d8eaff', '#9c8366', QUALITY.shadows ? 0.95 : 1.25]} />
+      <ambientLight intensity={0.12} />
       <group key={levelVersion}>
         <Sun engine={engine} />
         <StaticWorld engine={engine} />

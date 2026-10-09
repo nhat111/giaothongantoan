@@ -6,11 +6,13 @@ import { mat, Box, cylGeo, sphereGeo, SW, makeCoords, tileHeight } from './commo
 import { makePedSignalCanvas } from './textures.js';
 import { Moto, Car, Bus, Kid, useWheelSpin } from './Models.jsx';
 import { bikeCamera, bikePose } from './BikeScene.jsx';
+import { BakedModel } from './bake.jsx';
+import { BlobShadow } from './Models.jsx';
+import { QUALITY } from '../quality.js';
 
 // ---------- xe cộ ----------
 function Vehicle({ engine, v }) {
   const ref = useRef();
-  const wheels = useWheelSpin();
   const { wx, wz } = makeCoords(engine);
   const lane = v.lane;
   // Bài xe đạp: xe trong làn của bé chạy lệch về phía tim đường để vượt bé an toàn,
@@ -19,26 +21,29 @@ function Vehicle({ engine, v }) {
   const lateral = bikeLane ? (v.type === 'moto' ? -0.35 - v.seed * 0.3 : -0.45) : v.type === 'moto' ? (v.seed - 0.5) * 1.0 : 0;
   const z = wz(lane.row + 0.5) + lateral;
   const dodge = useRef(0);
-  const r = v.type === 'bus' ? 0.5 : v.type === 'car' ? 0.33 : 0.27;
+  const q = Math.floor(v.seed * 6) / 6 + 0.01; // gom biến thể để dùng lại hình đã gộp
   useFrame((_, dt) => {
     const g = ref.current;
     if (!g) return;
     const x = engine.vx(lane, v) + v.len / 2;
     let want = 0;
-    if (bikeLane) {
+    if (bikeLane && engine.bike) {
       const nearParked = engine.bike.parked.some((p) => x + v.len / 2 > p.x - 0.8 && x - v.len / 2 < p.x + p.len + 0.3);
       if (nearParked) want = v.type === 'moto' ? -0.35 : -0.75;
     }
     dodge.current += (want - dodge.current) * Math.min(1, dt * 4);
     g.position.set(wx(x), 0, z + dodge.current);
-    const spin = -(v.dist * TILE) / r;
-    wheels.forEach((w) => w.current && (w.current.rotation.z = spin));
+
   });
   return (
     <group ref={ref} rotation={[0, lane.dir === 1 ? 0 : Math.PI, 0]}>
-      {v.type === 'moto' && <Moto color={v.color} seed={v.seed} wheelRefs={wheels} />}
-      {v.type === 'car' && <Car color={v.color} seed={v.seed} wheelRefs={wheels} />}
-      {v.type === 'bus' && <Bus color={v.color} wheelRefs={wheels} />}
+      {/* mỗi loại xe + màu được gộp thành 1-2 khối và dùng chung, nhẹ cho GPU */}
+      <BakedModel cacheKey={v.type + ':' + v.color + ':' + q}>
+        {v.type === 'moto' && <Moto color={v.color} seed={q} />}
+        {v.type === 'car' && <Car color={v.color} seed={q} />}
+        {v.type === 'bus' && <Bus color={v.color} />}
+        <BlobShadow w={v.len * TILE * 0.95} d={v.type === 'moto' ? 0.8 : v.type === 'car' ? 2.0 : 2.7} />
+      </BakedModel>
     </group>
   );
 }
@@ -166,7 +171,12 @@ export function KidActor({ engine }) {
     if (head.current) head.current.rotation.y += (hy - head.current.rotation.y) * 0.3;
     g.visible = !(lv && engine.time - lv.start < LOOK_TIME - 0.3);
   });
-  return <Kid ref={group} legs={legs} arms={arms} head={head} />;
+  return (
+    <group>
+      <Kid ref={group} legs={legs} arms={arms} head={head} />
+      <BlobFollow target={group} />
+    </group>
+  );
 }
 
 // góc quay đầu (radian, dương = sang trái) theo thời gian quan sát
@@ -182,7 +192,7 @@ export function lookYaw(t) {
 
 // ---------- camera ----------
 export function CameraRig({ engine }) {
-  const { camera } = useThree();
+  const { camera, size } = useThree();
   const look = useRef(new THREE.Vector3());
   const pos = useRef(new THREE.Vector3());
   const first = useRef(true);
@@ -194,6 +204,12 @@ export function CameraRig({ engine }) {
     const r = k.pr + (k.r - k.pr) * e;
     const px = wx(c + 0.5), pz = wz(r + 0.5);
     const py = tileHeight(engine.tile(k.c, k.r));
+    // điện thoại cầm dọc: mở rộng góc nhìn để thấy hai bên đường
+    const wantFov = size.width < size.height * 0.9 ? 66 : 50;
+    if (Math.abs(camera.fov - wantFov) > 0.1) {
+      camera.fov = wantFov;
+      camera.updateProjectionMatrix();
+    }
     let camPos, target, rate = 3.5;
     if (engine.bike) {
       const out = { pos: new THREE.Vector3(), target: new THREE.Vector3(), rate: 4 };
@@ -225,8 +241,10 @@ export function CameraRig({ engine }) {
     } else {
       // góc nhìn thứ ba: phía sau - trên cao, hướng về phía đường cần đi
       const back = engine.kid.r > engine.goal.r ? 1 : -1;
-      camPos = new THREE.Vector3(px, py + 9.5, pz + back * 7.4);
-      target = new THREE.Vector3(px, py + 0.4, pz - back * 3.2);
+      // màn hình dọc (điện thoại): lùi xa và cao hơn để thấy cả con đường phía trước
+      const portrait = size.width < size.height * 0.9;
+      camPos = portrait ? new THREE.Vector3(px, py + 13, pz + back * 9.5) : new THREE.Vector3(px, py + 11, pz + back * 9.2);
+      target = portrait ? new THREE.Vector3(px, py + 0.2, pz - back * 4.8) : new THREE.Vector3(px, py + 0.4, pz - back * 3.6);
     }
     if (first.current) {
       pos.current.copy(camPos);
@@ -272,9 +290,9 @@ export function Sun({ engine }) {
   return (
     <directionalLight
       ref={light}
-      intensity={2.6}
-      color="#fff1d6"
-      castShadow
+      intensity={QUALITY.shadows ? 2.5 : 2.1}
+      color="#ffe8c2"
+      castShadow={QUALITY.shadows}
       shadow-mapSize={[2048, 2048]}
       shadow-camera-left={-34}
       shadow-camera-right={34}
@@ -341,5 +359,20 @@ export function FlashTile({ engine }) {
       <planeGeometry args={[TILE * 0.95, TILE * 0.95]} />
       <meshBasicMaterial color="#ff2d2d" transparent opacity={0.5} depthWrite={false} />
     </mesh>
+  );
+}
+
+// bóng mềm bám theo một nhân vật (đặt ngoài nhân vật để không bị ẩn cùng khi camera nhìn qua mắt bé)
+export function BlobFollow({ target, size = 0.7 }) {
+  const ref = useRef();
+  useFrame(() => {
+    const t = target.current;
+    if (!t || !ref.current) return;
+    ref.current.position.set(t.position.x, t.position.y, t.position.z);
+  });
+  return (
+    <group ref={ref}>
+      <BlobShadow w={size} d={size} />
+    </group>
   );
 }

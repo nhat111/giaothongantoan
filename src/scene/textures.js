@@ -91,7 +91,8 @@ export function sidewalkTexture(repX, repY) {
         for (let j = 0; j < n; j++) {
           const red = (i + j) % 2 === 0;
           const tone = Math.floor(rnd() * 14);
-          ctx.fillStyle = red ? `rgb(${168 + tone},${92 + tone},${78 + tone})` : `rgb(${188 + tone},${180 + tone},${166 + tone})`;
+          // gạch terrazzo: đỏ gạch nhạt và xám ấm, tương phản dịu
+          ctx.fillStyle = red ? `rgb(${178 + tone},${122 + tone},${104 + tone})` : `rgb(${196 + tone},${189 + tone},${176 + tone})`;
           ctx.fillRect(i * s, j * s, s, s);
                 for (let k = 0; k < 60; k++) {
             ctx.fillStyle = rnd() < 0.5 ? 'rgba(255,255,255,.18)' : 'rgba(0,0,0,.12)';

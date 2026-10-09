@@ -1,13 +1,132 @@
+import * as THREE from 'three';
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { TILE, EXT } from '../game/engine.js';
 import { mat, Box, cylGeo, SW, makeCoords } from './common.jsx';
 import { mulberry32, plasterTexture, signTexture, textTexture, flagTexture } from './textures.js';
+import { Baked } from './bake.jsx';
 
 const WALLS = ['#f3e3b3', '#e9c46a', '#f4f1de', '#cfe3d4', '#f2cfc2', '#d9e4f2', '#f7d9a0', '#e8e1d0', '#c9d8b6', '#f0b8a0', '#ffffff', '#d7c4e8'];
 const AWNINGS = ['#1f5fbf', '#d62b2b', '#2a8f7f', '#f2a20c', '#6b3fa0'];
 const FLOOR_H = 3.3;
 const DEPTH = 14;
+
+const ROOFS = ['#b5452f', '#a3402a', '#c0563a', '#3c6fb0', '#5c7f9a', '#8a8f94'];
+
+// Mái dốc hai bên (nóc chạy song song mặt đường)
+function Roof({ w, depth, wallH, color, z0 = 0 }) {
+  const pitch = 0.42;
+  const half = depth / 2 + 0.3;
+  const slope = half / Math.cos(pitch);
+  const rise = Math.tan(pitch) * half;
+  const m = mat(color, { roughness: 0.75 });
+  const zc = z0 - depth / 2;
+  return (
+    <group>
+      <Box s={[w + 0.3, 0.08, slope]} p={[0, wallH + rise / 2, zc + half / 2]} r={[pitch, 0, 0]} m={m} cast receive />
+      <Box s={[w + 0.3, 0.08, slope]} p={[0, wallH + rise / 2, zc - half / 2]} r={[-pitch, 0, 0]} m={m} cast receive />
+      <Box s={[w + 0.32, 0.14, 0.2]} p={[0, wallH + rise + 0.02, zc]} m={mat(color === '#3c6fb0' || color === '#5c7f9a' || color === '#8a8f94' ? '#6f7478' : '#7f2f1f')} />
+      {/* đầu hồi */}
+      <mesh position={[w / 2 - 0.02, wallH, zc]} rotation={[0, Math.PI / 2, 0]}>
+        <shapeGeometry args={[gable(half, rise)]} />
+        <meshStandardMaterial color="#e8dfcc" side={2} />
+      </mesh>
+      <mesh position={[-w / 2 + 0.02, wallH, zc]} rotation={[0, Math.PI / 2, 0]}>
+        <shapeGeometry args={[gable(half, rise)]} />
+        <meshStandardMaterial color="#e8dfcc" side={2} />
+      </mesh>
+    </group>
+  );
+}
+const gableCache = new Map();
+function gable(half, rise) {
+  const k = half.toFixed(2) + ':' + rise.toFixed(2);
+  if (!gableCache.has(k)) {
+    const sh = new THREE.Shape();
+    sh.moveTo(-half + 0.3, 0);
+    sh.lineTo(half - 0.3, 0);
+    sh.lineTo(0, rise - 0.1);
+    sh.closePath();
+    gableCache.set(k, sh);
+  }
+  return gableCache.get(k);
+}
+
+// Nhà cấp 4 mái ngói / mái tôn (dãy nhà phía camera)
+function LowHouse({ h }) {
+  const wallH = 3.1;
+  const depth = 9;
+  const wall = mat(h.color, { map: plasterTexture(), roughness: 0.9 });
+  return (
+    <group position={[h.x, 0, 0]}>
+      <Box s={[h.w - 0.1, wallH, depth]} p={[0, wallH / 2, -depth / 2]} m={wall} cast receive />
+      <Box s={[1.1, 2.2, 0.06]} p={[-h.w * 0.18, 1.1 + SW, 0.02]} m={mat(h.door)} />
+      <Box s={[1.0, 0.9, 0.05]} p={[h.w * 0.22, 1.7, 0.02]} m={mat('#33495a', { roughness: 0.2, metalness: 0.4 })} />
+      <Box s={[1.1, 0.06, 0.12]} p={[h.w * 0.22, 2.2, 0.05]} m={mat('#e8e4da')} />
+      <Roof w={h.w - 0.1} depth={depth} wallH={wallH} color={h.roof} />
+      {h.tank && (
+        <mesh geometry={cylGeo(0.45, 0.45, 1.3, 14)} position={[h.w * 0.2, wallH + 1.9, -6]} rotation={[0, 0, Math.PI / 2]} material={mat('#d7dbe0', { metalness: 0.9, roughness: 0.25 })} castShadow />
+      )}
+      {h.plant && (
+        <group position={[h.w / 2 - 0.5, SW, 0.45]}>
+          <mesh geometry={cylGeo(0.22, 0.17, 0.4, 10)} position={[0, 0.2, 0]} material={mat('#a0522d')} />
+          <mesh position={[0, 0.65, 0]}>
+            <icosahedronGeometry args={[0.38, 1]} />
+            <meshStandardMaterial color="#4c8a3a" roughness={1} />
+          </mesh>
+        </group>
+      )}
+      {h.clothes && (
+        <group position={[0, 2.5, -depth - 0.5]}>
+          {[-0.9, -0.3, 0.3, 0.9].map((dx, k) => (
+            <Box key={k} s={[0.4, 0.55, 0.02]} p={[dx, 0, 0]} m={mat(['#e36a8f', '#f2f2f2', '#2f6db5', '#f2c230'][k])} />
+          ))}
+        </group>
+      )}
+    </group>
+  );
+}
+
+// Nhà của bé ở dãy phía camera: cổng + sân trước, nhà lùi vào trong để không che bé
+function HomeYard({ x, w }) {
+  const wall = mat('#f4d58d', { map: plasterTexture(), roughness: 0.9 });
+  const fence = mat('#f2e6c8');
+  const label = useMemo(() => textTexture('home', 'NHÀ BÉ AN', { w: 512, h: 128, bg: '#2f6fd6', fg: '#ffffff', font: 60 }), []);
+  const yard = 3.4;
+  const gateW = 1.8;
+  return (
+    <group position={[x, 0, 0]}>
+      <Box s={[w, SW, yard]} p={[0, SW / 2, -yard / 2]} m={mat('#cfc6b6', { roughness: 0.7 })} receive />
+      {[-1, 1].map((sg) => (
+        <group key={sg}>
+          <Box s={[(w - gateW) / 2, 1.0, 0.18]} p={[sg * (gateW / 2 + (w - gateW) / 4), 0.5 + SW, -0.1]} m={fence} cast />
+          <Box s={[0.3, 1.8, 0.3]} p={[sg * (gateW / 2 + 0.15), 0.9 + SW, -0.1]} m={mat('#e9dcb8')} cast />
+        </group>
+      ))}
+      <Box s={[0.18, 1.0, yard]} p={[-w / 2 + 0.09, 0.5 + SW, -yard / 2]} m={fence} />
+      <Box s={[0.18, 1.0, yard]} p={[w / 2 - 0.09, 0.5 + SW, -yard / 2]} m={fence} />
+      {/* chậu cây trong sân */}
+      {[-1, 1].map((sg) => (
+        <group key={'p' + sg} position={[sg * (w / 2 - 0.6), SW, -yard + 0.6]}>
+          <mesh geometry={cylGeo(0.25, 0.2, 0.45, 10)} position={[0, 0.22, 0]} material={mat('#a0522d')} />
+          <mesh position={[0, 0.75, 0]}>
+            <icosahedronGeometry args={[0.42, 1]} />
+            <meshStandardMaterial color={sg > 0 ? '#c2185b' : '#4c8a3a'} roughness={1} />
+          </mesh>
+        </group>
+      ))}
+      <group position={[0, 0, -yard]}>
+        <Box s={[w, 3.1, 9]} p={[0, 1.55, -4.5]} m={wall} cast receive />
+        <Box s={[1.4, 2.3, 0.06]} p={[0, 1.15 + SW, 0.02]} m={mat('#7a4b2a')} />
+        <mesh position={[0, 2.75, 0.04]}>
+          <planeGeometry args={[1.8, 0.45]} />
+          <meshStandardMaterial map={label} />
+        </mesh>
+        <Roof w={w} depth={9} wallH={3.1} color="#b5452f" />
+      </group>
+    </group>
+  );
+}
 
 // Một căn nhà ống. Gốc toạ độ: giữa mặt tiền, mặt tiền nhìn về +z, nhà kéo dài về -z.
 function ShopHouse({ h }) {
@@ -213,7 +332,7 @@ function School({ x, w }) {
       {/* cột cờ */}
       <group position={[-w / 2 + 2, 0, -5]}>
         <mesh geometry={cylGeo(0.06, 0.08, 9, 8)} position={[0, 4.5, 0]} material={mat('#d6d6d6', { metalness: 0.8, roughness: 0.3 })} castShadow />
-        <group ref={flagRef} position={[0, 8.2, 0]}>
+        <group ref={flagRef} position={[0, 8.2, 0]} userData={{ noBake: true }}>
           <mesh position={[0.75, 0, 0]}>
             <planeGeometry args={[1.5, 1.0]} />
             <meshStandardMaterial map={flag} side={2} />
@@ -239,6 +358,8 @@ function School({ x, w }) {
 export function BuildingRow({ engine, row }) {
   const { wx, wz } = makeCoords(engine);
   const facing = row === 0 ? 1 : -1;
+  // Dãy nhà phía camera (bài đi bộ): nhà cấp 4 mái ngói / mái tôn thấp để không che bé
+  const low = facing === -1 && !engine.bike;
   const frontZ = facing === 1 ? wz(row + 1) : wz(row);
   const cells = engine.grid[row];
   const houses = useMemo(() => {
@@ -262,6 +383,21 @@ export function BuildingRow({ engine, row }) {
       const next = specials.find((s) => s.x0 > x && s.x0 < x + w + 3);
       if (next) w = next.x0 - x < 7 ? next.x0 - x : w;
       const floors = 2 + Math.floor(rnd() * 4);
+      if (low) {
+        list.push({
+          kind: 'low',
+          x: x + w / 2,
+          w,
+          color: WALLS[Math.floor(rnd() * WALLS.length)],
+          roof: ROOFS[Math.floor(rnd() * ROOFS.length)],
+          door: rnd() < 0.5 ? '#6b4a2e' : '#3c4a5a',
+          tank: rnd() < 0.5,
+          plant: rnd() < 0.5,
+          clothes: rnd() < 0.3
+        });
+        x += w;
+        continue;
+      }
       list.push({
         kind: 'shop',
         x: x + w / 2,
@@ -288,7 +424,7 @@ export function BuildingRow({ engine, row }) {
   const ref = useRef();
   useFrame((state, dt) => {
     const g = ref.current;
-    if (!g) return;
+    if (!g || low) return;
     const camZ = state.camera.position.z;
     const behind = facing === -1 ? camZ > frontZ + 0.3 : camZ < frontZ - 0.3;
     const target = behind && state.camera.position.y > 2.5 ? 0.015 : 1;
@@ -297,13 +433,16 @@ export function BuildingRow({ engine, row }) {
 
   // Lật trục x khi dãy nhà quay mặt về -z để toạ độ x khớp với bản đồ.
   return (
-    <group ref={ref} position={[0, 0, frontZ]} rotation={[0, facing === 1 ? 0 : Math.PI, 0]}>
+    <group ref={ref} position={[0, 0, frontZ]} rotation={[0, facing === 1 ? 0 : Math.PI, 0]} userData={{ noBake: true }}>
+      <Baked>
       {houses.map((h, i) => {
         const lx = facing === 1 ? h.x : -h.x;
-        if (h.kind === 'home') return <HomeHouse key={i} x={lx} w={h.w} />;
+        if (h.kind === 'home') return low ? <HomeYard key={i} x={lx} w={h.w} /> : <HomeHouse key={i} x={lx} w={h.w} />;
+        if (h.kind === 'low') return <LowHouse key={i} h={{ ...h, x: lx }} />;
         if (h.kind === 'school') return <School key={i} x={lx} w={h.w} />;
         return <ShopHouse key={i} h={{ ...h, x: lx }} />;
       })}
+      </Baked>
     </group>
   );
 }

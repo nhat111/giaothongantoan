@@ -6,6 +6,7 @@ import { unlockAudio as unlockSound } from './sound.js';
 import { speak, stopSpeech, primeSpeech, setSpeechOn, speechSupported, hasVietnameseVoice, hasRecordedVoice } from './speech.js';
 import { walkIntroText, bikeIntroText, prepToggleText, rulesText, menuText, winHead, winText, eventText, PREP_ORDER } from './voiceText.js';
 import { EVENTS } from '../game/events.js';
+import { QUALITY, setQualityMode } from '../quality.js';
 
 function unlockAudio() {
   unlockSound();
@@ -533,6 +534,15 @@ function LevelMenu() {
             Quay lại bài đang chơi
           </button>
         )}
+        <div className="quality">
+          <span>Hình ảnh:</span>
+          <button className={QUALITY.mode === 'pin' ? 'on' : ''} onClick={() => QUALITY.mode !== 'pin' && setQualityMode('pin')}>
+            🔋 Tiết kiệm pin
+          </button>
+          <button className={QUALITY.mode === 'dep' ? 'on' : ''} onClick={() => QUALITY.mode !== 'dep' && setQualityMode('dep')}>
+            ✨ Đẹp hơn
+          </button>
+        </div>
       </div>
     </div>
   );

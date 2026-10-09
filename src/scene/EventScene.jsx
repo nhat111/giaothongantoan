@@ -4,7 +4,8 @@ import { RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
 import { TILE, STEP_TIME } from '../game/engine.js';
 import { mat, Box, cylGeo, sphereGeo, SW, makeCoords, tileHeight } from './common.jsx';
-import { Kid, Moto, Wheel } from './Models.jsx';
+import { Kid, Moto, Wheel, BlobShadow } from './Models.jsx';
+import { BakedModel } from './bake.jsx';
 import { textTexture } from './textures.js';
 
 const ease = (t) => t * t * (3 - 2 * t);
@@ -57,7 +58,8 @@ export function ParentActor({ engine }) {
   });
   return (
     <group ref={group} scale={1.38}>
-      <Kid legs={legs} arms={arms} head={head} shirtColor="#c94f7c" pantsColor="#2b2b33" scarf={false} bag={false} nonLa longHair />
+      <Kid legs={legs} arms={arms} head={head} shirtColor="#c94f7c" pantsColor="#2b2b33" scarf={false} bag={false} nonLa longHair headScale={1.05} />
+      <BlobShadow w={0.55} d={0.55} />
     </group>
   );
 }
@@ -244,7 +246,10 @@ export function EventProps({ engine }) {
     <group>
       {has('reverse') && (
         <group ref={refs.moto}>
-          <Moto color="#1f5fbf" seed={0.33} />
+          <BakedModel cacheKey="event-moto">
+            <Moto color="#1f5fbf" seed={0.33} />
+            <BlobShadow w={1.9} d={0.8} />
+          </BakedModel>
         </group>
       )}
       {friend && (

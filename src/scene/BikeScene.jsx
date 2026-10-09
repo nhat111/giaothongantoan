@@ -4,7 +4,8 @@ import * as THREE from 'three';
 import { TILE } from '../game/engine.js';
 import { LOOKBACK_TIME } from '../game/bike.js';
 import { SW, makeCoords } from './common.jsx';
-import { Bicycle, Car, Kid, useWheelSpin } from './Models.jsx';
+import { Bicycle, Car, Kid, useWheelSpin, BlobShadow } from './Models.jsx';
+import { BakedModel } from './bake.jsx';
 
 // lệch ngang (mét) so với tim làn: sát lề = +0.85, giữa làn = -0.15
 export const EDGE_OFF = 0.85;
@@ -84,6 +85,7 @@ export function BikeActor({ engine }) {
   return (
     <group ref={group}>
       <Bicycle wheelRefs={wheels} crankRef={crank} />
+      <BlobShadow w={1.8} d={0.55} />
       <group ref={rider} position={[-0.14, 0.18, 0]} rotation={[0, Math.PI / 2, 0]}>
         <Kid legs={legs} arms={arms} head={head} helmet={helmet} />
       </group>
@@ -96,7 +98,10 @@ export function ParkedCars({ engine }) {
   const b = engine.bike;
   return b.parked.map((p, i) => (
     <group key={i} position={[wx(p.x + p.len / 2), 0, wz(b.row + 0.5) + 0.62]}>
-      <Car color={p.color} seed={0.9 + i * 0.01} />
+      <BakedModel cacheKey={'parked:' + p.color}>
+        <Car color={p.color} seed={0.9} />
+        <BlobShadow w={4.6} d={2.0} />
+      </BakedModel>
       {/* đèn cảnh báo nhấp nháy */}
       <Hazard />
       {p.door && <CarDoor engine={engine} color={p.color} />}

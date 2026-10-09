@@ -168,3 +168,7 @@ button.hand .ico { font-size: 24px; }
   .event-q h2 { font-size: 19px; }
   .choice { font-size: 16px; padding: 10px 12px; }
 }
+
+.quality { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
+.quality button { font-size: 14px; padding: 6px 10px; background: #eef3fa; box-shadow: 0 2px 0 #c4d6ec; }
+.quality button.on { background: var(--blue); color: #fff; box-shadow: 0 2px 0 #1d4e9e; }

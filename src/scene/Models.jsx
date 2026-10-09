@@ -2,6 +2,7 @@ import { forwardRef, useMemo } from 'react';
 import * as THREE from 'three';
 import { RoundedBox } from '@react-three/drei';
 import { mat, Box, cylGeo, sphereGeo } from './common.jsx';
+import { BakedModel } from './bake.jsx';
 import { mulberry32, textTexture } from './textures.js';
 
 const SKIN = ['#e9b98f', '#d9a27a', '#c98d63', '#f0c8a2'];
@@ -125,7 +126,7 @@ export function Bus({ color, wheelRefs }) {
 
 // Bé học sinh: áo trắng, quần xanh, khăn quàng đỏ, cặp sách. Mặt hướng về +z.
 export const Kid = forwardRef(function Kid(
-  { legs, arms, head, helmet = false, shirtColor = '#fbfbf8', pantsColor = '#1f2f5c', scarf = true, bag = true, nonLa = false, longHair = false },
+  { legs, arms, head, helmet = false, shirtColor = '#fbfbf8', pantsColor = '#1f2f5c', scarf = true, bag = true, nonLa = false, longHair = false, headScale = 1.3 },
   ref
 ) {
   const skin = mat('#f0c39b');
@@ -171,7 +172,7 @@ export const Kid = forwardRef(function Kid(
         </>
       )}
       {/* đầu */}
-      <group position={[0, 1.24, 0]} ref={head}>
+      <group position={[0, 1.27, 0]} ref={head} scale={headScale}>
         <mesh geometry={sphereGeo(0.15)} material={skin} castShadow />
         <mesh geometry={sphereGeo(0.158)} position={[0, 0.03, -0.025]} scale={[1, 0.92, 1]} material={mat('#2a1d14', { roughness: 0.9 })} />
         <mesh geometry={sphereGeo(0.02, 8, 6)} position={[-0.05, 0.0, 0.135]} material={mat('#111')} />
@@ -230,6 +231,7 @@ export function Bicycle({ wheelRefs, crankRef, color = '#1f8fd6' }) {
     <group>
       <Wh x={0.55} i={0} />
       <Wh x={-0.55} i={1} />
+      <BakedModel cacheKey={'bike-frame:' + color}>
       <Tube a={[-0.16, 0.8, 0]} b={[0.38, 0.84, 0]} m={frame} />
       <Tube a={[0.38, 0.8, 0]} b={[0.02, 0.36, 0]} r={0.028} m={frame} />
       <Tube a={[-0.16, 0.82, 0]} b={[0.02, 0.36, 0]} m={frame} />
@@ -255,6 +257,9 @@ export function Bicycle({ wheelRefs, crankRef, color = '#1f8fd6' }) {
           <Box key={'z' + k} s={[0.3, 0.24, 0.015]} p={[0, 0, z]} m={mat('#e8e8e8', { metalness: 0.5 })} />
         ))}
       </group>
+      {/* đèn hậu */}
+      <Box s={[0.04, 0.05, 0.03]} p={[-0.82, 0.52, 0]} m={mat('#ff3030', { emissive: '#a00000', emissiveIntensity: 0.9 })} />
+      </BakedModel>
       {/* đùi đĩa + bàn đạp */}
       <group position={[0.02, 0.36, 0]} ref={crankRef}>
         <mesh geometry={cylGeo(0.09, 0.09, 0.03, 16)} rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0.07]} material={steel} />
@@ -263,8 +268,6 @@ export function Bicycle({ wheelRefs, crankRef, color = '#1f8fd6' }) {
         <Box s={[0.08, 0.025, 0.1]} p={[0.16, 0, 0.15]} m={dark} />
         <Box s={[0.08, 0.025, 0.1]} p={[-0.16, 0, -0.15]} m={dark} />
       </group>
-      {/* chắn bùn + đèn hậu */}
-      <Box s={[0.04, 0.05, 0.03]} p={[-0.82, 0.52, 0]} m={mat('#ff3030', { emissive: '#a00000', emissiveIntensity: 0.9 })} />
     </group>
   );
 }
@@ -274,3 +277,27 @@ export function useWheelSpin() {
 }
 
 export const tmpV = new THREE.Vector3();
+
+// Bóng mềm dưới chân / dưới xe: nhẹ hơn bóng đổ thật, dùng được trên điện thoại
+let blobTex = null;
+function blobTexture() {
+  if (blobTex) return blobTex;
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d');
+  const grd = g.createRadialGradient(32, 32, 4, 32, 32, 32);
+  grd.addColorStop(0, 'rgba(0,0,0,0.55)');
+  grd.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = grd;
+  g.fillRect(0, 0, 64, 64);
+  blobTex = new THREE.CanvasTexture(c);
+  return blobTex;
+}
+const blobMat = () => mat('#000000', { map: blobTexture(), transparent: true, depthWrite: false, opacity: 1 });
+export function BlobShadow({ w = 0.8, d = 0.8, y = 0.02 }) {
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, y, 0]} material={blobMat()} renderOrder={-1}>
+      <planeGeometry args={[w * 1.15, d * 1.25]} />
+    </mesh>
+  );
+}

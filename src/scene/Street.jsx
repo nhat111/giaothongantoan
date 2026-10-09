@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Line } from '@react-three/drei';
+import * as THREE from 'three';
 import { TILE, EXT } from '../game/engine.js';
 import { mat, Box, SW, cylGeo, sphereGeo, makeCoords } from './common.jsx';
 import { asphaltTexture, sidewalkTexture, mulberry32, crossingSignTexture } from './textures.js';
@@ -154,7 +154,7 @@ export function Tree({ x, z, y = SW, s = 1, seed = 0.5 }) {
       {blobs.map(([bx, by, bz, r, c], i) => (
         <mesh key={i} position={[bx, by, bz]} castShadow>
           <icosahedronGeometry args={[r, 1]} />
-          <meshStandardMaterial color={c} roughness={1} flatShading />
+          <meshStandardMaterial color={c} roughness={1} />
         </mesh>
       ))}
     </group>
@@ -174,6 +174,11 @@ function Pole({ x, z }) {
       <mesh geometry={cylGeo(0.25, 0.25, 0.6, 10)} position={[0, 6.2, 0.35]} material={mat('#6d6d6d')} />
     </group>
   );
+}
+
+function wireGeo(pts, r) {
+  const curve = new THREE.CatmullRomCurve3(pts.map((p) => new THREE.Vector3(...p)));
+  return new THREE.TubeGeometry(curve, 10, r, 3, false);
 }
 
 function sag(a, b, drop, n = 10) {
@@ -215,8 +220,9 @@ export function PowerLine({ engine, row, side }) {
       {xs.map((x, i) => (
         <Pole key={i} x={x} z={z} />
       ))}
+      {/* dây điện: ống mảnh (được gộp chung với cả con phố nên gần như không tốn thêm lệnh vẽ) */}
       {wires.map((w, i) => (
-        <Line key={i} points={w.pts} color={w.k > 3 ? '#1a1a1a' : '#2b2b2b'} lineWidth={w.k > 3 ? 2 : 1.2} />
+        <mesh key={i} geometry={wireGeo(w.pts, w.k > 3 ? 0.022 : 0.014)} material={mat(w.k > 3 ? '#1a1a1a' : '#2b2b2b')} />
       ))}
     </group>
   );
