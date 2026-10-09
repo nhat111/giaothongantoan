@@ -3,7 +3,8 @@ import { engine } from '../game/engine.js';
 import { LEVELS } from '../game/levels.js';
 import { useGame } from './store.js';
 import { unlockAudio as unlockSound } from './sound.js';
-import { speak, stopSpeech, primeSpeech, setSpeechOn, speechSupported, hasVietnameseVoice } from './speech.js';
+import { speak, stopSpeech, primeSpeech, setSpeechOn, speechSupported, hasVietnameseVoice, hasRecordedVoice } from './speech.js';
+import { walkIntroText, bikeIntroText, prepToggleText, rulesText, menuText, winHead, winText, PREP_ORDER } from './voiceText.js';
 
 function unlockAudio() {
   unlockSound();
@@ -108,7 +109,7 @@ export function TopBar() {
         <aside className="rules">
           <span className="label">Luật của bài</span>
           <h3>
-            {L.title} <Say text={L.title + '. ' + L.rules.join(' ')} label="Nghe luật" />
+            {L.title} <Say text={rulesText(L)} label="Nghe luật" />
           </h3>
           <ol>
             {L.rules.map((r) => (
@@ -256,21 +257,18 @@ export function Controls() {
 function PrepIntro({ L }) {
   const [sel, setSel] = useState(() => new Set());
   // trộn thứ tự cố định để mục đúng và sai xen kẽ nhau
-  const order = [0, 2, 1, 3].filter((i) => i < L.prep.length);
+  const order = PREP_ORDER.filter((i) => i < L.prep.length);
   const toggle = (i) => {
     unlockAudio();
     const willSelect = !sel.has(i);
-    speak((willSelect ? 'Bé chọn: ' : 'Bỏ chọn: ') + L.prep[i].text);
+    speak(prepToggleText(willSelect, L.prep[i].text));
     setSel((s) => {
       const n = new Set(s);
       n.has(i) ? n.delete(i) : n.add(i);
       return n;
     });
   };
-  const intro =
-    L.title + '. ' + L.goal + ' Trước khi lên xe, bé chọn những việc nên làm. ' +
-    order.map((i, k) => 'Thẻ ' + (k + 1) + ': ' + L.prep[i].text + '.').join(' ') +
-    ' Chọn xong thì bấm nút Lên xe màu xanh.';
+  const intro = bikeIntroText(L);
   useAutoSpeak(intro, [L]);
   return (
     <div className="overlay">
@@ -317,7 +315,7 @@ function PrepIntro({ L }) {
 const PARENT_NOTE = 'Lưu ý cho bố mẹ: ngoài đời, trẻ dưới 7 tuổi khi qua đường phải có người lớn dắt tay.';
 
 function WalkIntro({ L }) {
-  const intro = L.title + '. ' + L.goal + ' ' + L.rules.join(' ') + ' Bấm nút Bắt đầu màu xanh để chơi.';
+  const intro = walkIntroText(L);
   useAutoSpeak(intro, [L]);
   return (
     <div className="overlay">
@@ -353,15 +351,8 @@ function WalkIntro({ L }) {
 }
 
 function WinSheet({ win, levelIdx }) {
-  const head =
-    win.stars === 3
-      ? 'Giỏi quá! Bé đi đúng luật suốt cả đoạn đường.'
-      : win.stars > 0
-      ? 'Bé đã đến trường. Lần sau nhớ thêm:'
-      : 'Bé đã đến trường, nhưng cần luyện thêm. Nhớ nhé:';
-  const said =
-    'Đến trường rồi! Bé được ' + win.stars + ' sao. ' + head + ' ' + win.lessons.join(' ') +
-    (win.last ? ' Tổng cộng ' + win.total + ' trên ' + win.max + ' sao.' : ' Bấm nút màu xanh để chơi bài tiếp theo.');
+  const head = winHead(win.stars);
+  const said = winText(win);
   useAutoSpeak(said, [win]);
   return (
     <div className="overlay">
@@ -417,7 +408,7 @@ export function VoiceHint() {
   const [missing, setMissing] = useState(false);
   useEffect(() => {
     if (!speechSupported) return;
-    const t = setTimeout(() => setMissing(!hasVietnameseVoice()), 1500);
+    const t = setTimeout(() => setMissing(!hasRecordedVoice() && !hasVietnameseVoice()), 2500);
     return () => clearTimeout(t);
   }, []);
   if (!speechOn || !missing) return null;
@@ -441,8 +432,7 @@ const cardTitle = (t) => {
 function LevelMenu() {
   const { levelIdx, menuFrom, levelVersion } = useGame();
   const best = engine.totalStars;
-  const said =
-    'Bé chọn bài muốn chơi. ' + LEVELS.map((L, i) => L.name + ': ' + (L.mode === 'bike' ? 'đi xe đạp, ' : 'đi bộ, ') + L.title + '.').join(' ');
+  const said = menuText(LEVELS);
   useAutoSpeak(said, [levelVersion]);
   const canClose = menuFrom !== undefined && menuFrom !== 'menu' && levelVersion > 1;
   return (

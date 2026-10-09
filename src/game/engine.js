@@ -15,7 +15,7 @@ export const VTYPES = {
   bus: { len: 4.3, speed: [2.0, 2.3], colors: ['#f2a20c', '#2f9a57'] }
 };
 
-const MSG = {
+export const MSG = {
   road: 'Ối! Không được đi xuống lòng đường. Muốn sang đường, hãy đi trên vỉa hè tới vạch kẻ trắng.',
   red: 'Đèn người đi bộ đang đỏ. Đứng chờ trên vỉa hè đến khi đèn xanh nhé.',
   blink: 'Đèn xanh đang nhấp nháy, sắp đỏ rồi. Chờ lượt đèn xanh sau rồi đi.',

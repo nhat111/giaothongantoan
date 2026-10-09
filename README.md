@@ -28,14 +28,23 @@ Mũ bảo hiểm chỉ bắt buộc với xe đạp máy, nên trong game mũ b�
 
 ## Đọc to cho bé chưa biết chữ
 
-Game đọc to bằng giọng tiếng Việt có sẵn trên máy (Web Speech API), không cần mạng hay file âm thanh:
-hướng dẫn mỗi bài, mọi lời nhắc trong lúc chơi, các thẻ chuẩn bị trước khi đi xe đạp, và màn hình kết quả.
+Game đọc to hướng dẫn mỗi bài, mọi lời nhắc khi chơi, các thẻ chuẩn bị đi xe đạp, danh sách bài và màn hình kết quả.
 
-- Nút 🔊 trên thanh trên cùng để bật / tắt đọc to (máy nhớ lựa chọn).
-- Nút **Nghe hướng dẫn** trên màn hình đầu bài, chạm vào lời nhắc để nghe lại.
-- iPhone / iPad có sẵn giọng Linh. Android dùng giọng Google tiếng Việt. Máy tính Windows / Mac có thể phải cài thêm giọng tiếng Việt;
-  nếu máy chưa có, game hiện hướng dẫn cài.
-- Trình duyệt chỉ cho đọc sau khi bé chạm màn hình lần đầu, nên màn hình đầu tiên cần chạm nút **Nghe hướng dẫn**.
+- Nút 🔊 trên thanh trên cùng để bật / tắt đọc to (máy nhớ lựa chọn). Chạm vào lời nhắc để nghe lại.
+- **Giọng tự nhiên:** mỗi câu được thu sẵn thành file mp3 trong `public/voice/` bằng giọng đọc thần kinh
+  `vi-VN-HoaiMyNeural` của Microsoft. Lệnh `npm run build` (Vercel cũng chạy lệnh này) tự tạo các câu còn thiếu nếu có mạng.
+  Tạo trên máy rồi commit để Vercel build nhanh hơn:
+
+  ```bash
+  npm run voice                          # tạo câu còn thiếu
+  VOICE=vi-VN-NamMinhNeural npm run voice -- --force   # đổi sang giọng nam, tạo lại tất cả
+  ```
+
+  Mặc định script dùng giọng đọc miễn phí của trình duyệt Edge (không chính thức). Muốn dùng dịch vụ chính thức
+  Azure Speech (có gói miễn phí hằng tháng): đặt `AZURE_SPEECH_KEY` và `AZURE_SPEECH_REGION` trước khi chạy.
+- Câu nào chưa có file mp3 thì game dùng giọng tiếng Việt có sẵn trên máy (iPhone: Linh, Android: Google).
+- Sửa câu chữ trong game xong thì chạy lại `npm run voice` để thu câu mới; file của câu không còn dùng sẽ tự xoá.
+- Trình duyệt chỉ cho phát tiếng sau khi bé chạm màn hình lần đầu.
 
 ## Chạy trên máy
 
