@@ -3,6 +3,7 @@
 // 2. Câu nào chưa có file thì dùng giọng tiếng Việt có sẵn trên máy (Web Speech API).
 
 import { splitSentences, sentenceId } from './voiceText.js';
+import voiceManifest from '../../public/voice/manifest.json';
 
 const synth = typeof window !== 'undefined' ? window.speechSynthesis : null;
 let voice = null;
@@ -14,22 +15,15 @@ try {
 }
 
 // ---------- giọng thu sẵn ----------
-let manifest = null; // { id: true }
+// Danh sách câu đã thu được đóng gói thẳng vào mã khi build (sau bước tạo giọng đọc),
+// nên không bị bộ nhớ đệm của trình duyệt / CDN giữ bản cũ.
+const manifest = new Set(voiceManifest.ids || []);
 const audio = typeof Audio !== 'undefined' ? new Audio() : null;
 let queue = [];
 let playing = false;
 
-if (typeof fetch !== 'undefined') {
-  fetch('/voice/manifest.json', { cache: 'no-cache' })
-    .then((r) => (r.ok ? r.json() : null))
-    .then((m) => {
-      if (m && m.ids) manifest = new Set(m.ids);
-    })
-    .catch(() => {});
-}
-
 export function hasRecordedVoice() {
-  return !!(manifest && manifest.size);
+  return manifest.size > 0;
 }
 
 function playNext() {
@@ -126,7 +120,7 @@ export function speak(text, { interrupt = true, force = false } = {}) {
     if (interrupt) stopSpeech();
     const ids = parts.map(sentenceId);
     // đủ file thu sẵn cho cả đoạn thì phát file, tránh lẫn hai giọng khác nhau trong một đoạn
-    if (audio && manifest && ids.every((id) => manifest.has(id))) {
+    if (audio && manifest.size && ids.every((id) => manifest.has(id))) {
       queue.push(...ids);
       if (!playing) playNext();
       return;
