@@ -78,3 +78,7 @@ export function winText(win) {
     (win.last ? ' Tổng cộng ' + win.total + ' trên ' + win.max + ' sao.' : ' Bấm nút màu xanh để chơi bài tiếp theo.')
   );
 }
+
+export function eventText(def) {
+  return def.prompt + ' ' + def.choices.map((c, k) => 'Cách ' + (k + 1) + ': ' + c.text + '.').join(' ');
+}

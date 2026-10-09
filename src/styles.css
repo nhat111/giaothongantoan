@@ -148,3 +148,23 @@ button.look .ico, button.signal .ico { font-size: 24px; line-height: 1; }
 .level-card .stars .off { color: #d0d9e6; text-shadow: none; }
 @media (max-width: 520px) { .hud { gap: 6px; } .hud button.ghost { padding: 6px 10px; font-size: 15px; } }
 .pill, .hud button { white-space: nowrap; }
+
+/* tình huống bất ngờ */
+.event-overlay { background: rgba(15, 25, 40, .35); align-items: end; }
+.sheet.event { max-width: 520px; }
+.event-q { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: center; }
+.event-q h2 { font-size: 22px; color: var(--ink); }
+.event-pic { font-size: 46px; line-height: 1; }
+.choices { display: grid; gap: 10px; }
+.choice { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 12px; text-align: left; background: #f3f7fc; border: 2px solid var(--line); box-shadow: 0 3px 0 #c4d6ec; font-size: 18px; line-height: 1.25; padding: 12px 14px; }
+.choice-pic { font-size: 30px; }
+button.hand { background: #ffd9e6; box-shadow: 0 4px 0 #d98aa6; font-size: 18px; display: grid; line-height: 1.05; padding: 10px 16px; }
+button.hand.on { background: #ff7aa8; color: #fff; box-shadow: 0 4px 0 #c24a74; }
+button.hand small { font-family: var(--body); font-weight: 600; font-size: 12px; }
+button.hand .ico { font-size: 24px; }
+@media (min-width: 821px) {
+  .event-overlay { background: transparent; place-items: end end; padding: 16px 16px 120px; pointer-events: none; }
+  .event-overlay .sheet { pointer-events: auto; max-width: 400px; padding: 16px; gap: 10px; box-shadow: 0 12px 40px rgba(0,0,0,.35); }
+  .event-q h2 { font-size: 19px; }
+  .choice { font-size: 16px; padding: 10px 12px; }
+}

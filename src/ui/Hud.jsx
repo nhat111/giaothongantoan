@@ -4,7 +4,8 @@ import { LEVELS } from '../game/levels.js';
 import { useGame } from './store.js';
 import { unlockAudio as unlockSound } from './sound.js';
 import { speak, stopSpeech, primeSpeech, setSpeechOn, speechSupported, hasVietnameseVoice, hasRecordedVoice } from './speech.js';
-import { walkIntroText, bikeIntroText, prepToggleText, rulesText, menuText, winHead, winText, PREP_ORDER } from './voiceText.js';
+import { walkIntroText, bikeIntroText, prepToggleText, rulesText, menuText, winHead, winText, eventText, PREP_ORDER } from './voiceText.js';
+import { EVENTS } from '../game/events.js';
 
 function unlockAudio() {
   unlockSound();
@@ -238,6 +239,7 @@ export function Controls() {
           Quan sát
           <small>{bike ? 'nhìn phía sau' : 'nhìn trái, nhìn phải'}</small>
         </button>
+        {L.withParent && <HandButton />}
         {bike && L.turnIntoGate && (
           <button className="signal" onClick={() => engine.signal()}>
             <span className="ico" aria-hidden="true">✋</span>
@@ -248,6 +250,61 @@ export function Controls() {
         <button className="ghost small" onClick={() => engine.load(engine.levelIdx)}>
           Chơi lại bài
         </button>
+      </div>
+    </div>
+  );
+}
+
+function HandButton() {
+  const holding = useGame((s) => s.holding);
+  return (
+    <button
+      className={'hand' + (holding ? ' on' : '')}
+      onClick={() => {
+        unlockAudio();
+        engine.holdHand();
+      }}
+    >
+      <span className="ico" aria-hidden="true">🤝</span>
+      {holding ? 'Đang nắm tay' : 'Nắm tay mẹ'}
+      <small>{holding ? 'chạm để buông' : 'khi qua đường'}</small>
+    </button>
+  );
+}
+
+// Tình huống bất ngờ: bé chọn cách xử lý
+function EventCard({ id }) {
+  const def = EVENTS[id];
+  const said = eventText(def);
+  useAutoSpeak(said, [id]);
+  return (
+    <div className="overlay event-overlay">
+      <div className="sheet event">
+        <div className="menu-head">
+          <span className="label">Tình huống bất ngờ</span>
+          <Say text={said} label="Nghe lại câu hỏi" />
+        </div>
+        <div className="event-q">
+          <span className="event-pic" aria-hidden="true">{def.icon}</span>
+          <h2>{def.prompt}</h2>
+        </div>
+        <div className="choices">
+          {def.choices.map((c, i) => (
+            <button
+              key={i}
+              className="choice"
+              onClick={() => {
+                unlockAudio();
+                stopSpeech();
+                useGame.setState({ overlay: null });
+                engine.resolveEvent(i);
+              }}
+            >
+              <span className="choice-pic" aria-hidden="true">{c.icon}</span>
+              <span>{c.text}</span>
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -485,6 +542,7 @@ export function Overlay() {
   const { overlay, win, levelIdx } = useGame();
   if (!overlay) return null;
   if (overlay === 'menu') return <LevelMenu />;
+  if (overlay === 'event') return <EventCard id={useGame.getState().eventId} />;
   const L = LEVELS[levelIdx];
   if (overlay === 'intro' && L.mode === 'bike') return <PrepIntro key={levelIdx + ':' + useGame.getState().levelVersion} L={L} />;
   if (overlay === 'intro') return <WalkIntro key={levelIdx + ':' + useGame.getState().levelVersion} L={L} />;

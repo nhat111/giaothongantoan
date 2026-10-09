@@ -138,5 +138,114 @@ export const LEVELS = [
       '..........................',
       'BHBBBBBBBBBBBBBBBBBBBBSBBB'
     ]
+  },
+  {
+    name: 'Bài 6',
+    title: 'Đi bộ: những tình huống bất ngờ',
+    goal: 'Trên đường đến trường sẽ có vài chuyện bất ngờ. Mỗi lần như vậy, bé chọn cách xử lý đúng.',
+    rules: [
+      'Gặp xe ra vào cổng nhà: dừng lại chờ.',
+      'Bạn gọi bên kia đường: vẫn đi tới vạch kẻ để sang.',
+      'Bóng lăn ra đường: không chạy theo.',
+      'Nghe còi xe cứu thương: dừng lại nhường đường.'
+    ],
+    signals: [true],
+    runnerChance: 0,
+    traffic: { min: 1.1, max: 2.4, types: ['moto', 'moto', 'moto', 'car', 'moto'] },
+    events: [
+      { id: 'reverse', c: 2, r: 4, from: { c: 3, r: 5 } },
+      { id: 'friend', c: 5, r: 4, at: { c: 5, r: 1 } },
+      { id: 'ball', c: 8, r: 4 },
+      { id: 'ambulance', c: 10, r: 4, road: 0 }
+    ],
+    map: [
+      'BBBBBBBBBBBBSBB',
+      '...............',
+      'rrrrrrrrrrzrrrr',
+      'rrrrrrrrrrzrrrr',
+      '...............',
+      'BHBBBBBBBBBBBBB'
+    ]
+  },
+  {
+    name: 'Bài 7',
+    title: 'Bé mẫu giáo: nắm tay mẹ qua đường',
+    goal: 'Hôm nay mẹ đưa bé đến trường. Bé dưới 7 tuổi phải nắm tay người lớn khi qua đường.',
+    rules: [
+      'Đi trên vỉa hè cùng mẹ.',
+      'Đến vạch kẻ đường: nhấn nút Nắm tay mẹ.',
+      'Chờ đèn hình người màu xanh rồi cùng mẹ sang đường.',
+      'Không buông tay mẹ khi đang qua đường.'
+    ],
+    signals: [true],
+    runnerChance: 0,
+    withParent: true,
+    traffic: { min: 1.1, max: 2.4, types: ['moto', 'moto', 'moto', 'car', 'moto'] },
+    map: [
+      'BBBBBSBBBBBBBBB',
+      '...............',
+      'rrrrrrrrrrzrrrr',
+      'rrrrrrrrrrzrrrr',
+      '...............',
+      'BBHBBBBBBBBBBBB'
+    ]
+  },
+  {
+    name: 'Bài 8',
+    title: 'Xuống xe buýt rồi sang đường',
+    goal: 'Bé vừa xuống xe buýt. Trường ở bên kia đường. Xe buýt đang đỗ che mất tầm nhìn, bé phải chờ xe đi rồi mới sang.',
+    rules: [
+      'Xuống xe buýt rồi đứng trên vỉa hè.',
+      'Không đi vòng trước đầu hay sau đuôi xe buýt để sang đường.',
+      'Chờ xe buýt chạy đi, rồi quan sát hai bên.',
+      'Sang đường ở vạch kẻ khi không có xe tới gần.'
+    ],
+    signals: [false],
+    runnerChance: 0,
+    busStop: { wait: 12 },
+    traffic: { min: 1.4, max: 3.0, types: ['moto', 'moto', 'moto', 'car', 'moto'] },
+    map: [
+      'BBBBBBBBSBBBBBB',
+      '...............',
+      'rrrrrrrzrrrrrrr',
+      'rrrrrrrzrrrrrrr',
+      '....A..........',
+      'BBBBBBBBBBBBBBB'
+    ]
+  },
+  {
+    name: 'Bài 9',
+    mode: 'bike',
+    title: 'Đi xe đạp: những tình huống bất ngờ',
+    goal: 'Trên đường đạp xe đến trường sẽ có vài chuyện bất ngờ. Bé chọn cách xử lý đúng, rồi dừng xe sát lề trước cổng trường.',
+    rules: [
+      'Đi ngang ô tô đỗ: cẩn thận cửa xe mở bất ngờ.',
+      'Gặp ổ gà, đường trơn: đi chậm, giữ chắc tay lái.',
+      'Gặp vật cản bất ngờ: bóp phanh, giữ thẳng tay lái.',
+      'Muốn tránh xe đỗ: quan sát phía sau trước.'
+    ],
+    prep: [
+      { icon: '⛑️', text: 'Đội mũ bảo hiểm', good: true, why: 'Mũ bảo hiểm bảo vệ đầu khi lỡ bị ngã.' },
+      { icon: '🦺', text: 'Mặc áo sáng màu cho người khác dễ nhìn thấy', good: true, why: 'Áo sáng màu giúp người lái xe nhìn thấy bé từ xa.' },
+      { icon: '☂️', text: 'Một tay cầm lái, một tay cầm ô che nắng', good: false, why: 'Phải giữ tay lái bằng cả hai tay. Vừa đạp xe vừa che ô rất dễ ngã.' },
+      { icon: '🏁', text: 'Đạp xe đuổi nhau với các bạn trên đường', good: false, why: 'Đuổi nhau trên đường rất dễ va chạm.' }
+    ],
+    signals: [false],
+    runnerChance: 0,
+    parked: [{ x: 9, len: 1.75, color: '#5b6168', door: true }],
+    events: [
+      { id: 'door', x: 7.2 },
+      { id: 'puddle', x: 12.6, at: 14 },
+      { id: 'dog', x: 17.4, at: 19 }
+    ],
+    traffic: { min: 1.8, max: 3.6, types: ['moto', 'moto', 'moto', 'car', 'moto'] },
+    map: [
+      'BBBBBBBBBBBBBBBBBBBBBBBBBB',
+      '..........................',
+      'rrrrrrrrrrrrrrrrrrrrrrrrrr',
+      'rrrrrrrrrrrrrrrrrrrrrrrrrr',
+      '..........................',
+      'BHBBBBBBBBBBBBBBBBBBBBBSBB'
+    ]
   }
 ];

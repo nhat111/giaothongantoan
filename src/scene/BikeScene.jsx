@@ -99,6 +99,7 @@ export function ParkedCars({ engine }) {
       <Car color={p.color} seed={0.9 + i * 0.01} />
       {/* đèn cảnh báo nhấp nháy */}
       <Hazard />
+      {p.door && <CarDoor engine={engine} color={p.color} />}
     </group>
   ));
 }
@@ -138,4 +139,29 @@ export function bikeCamera(engine, out) {
   out.pos.set(p.x - 6.2, 3.7, p.z - 1.9);
   out.target.set(p.x + 5, 0.7, p.z + 0.2);
   out.rate = 4;
+}
+
+// cửa ô tô mở bất ngờ (phía làn đường, bên tài xế)
+function CarDoor({ engine, color }) {
+  const ref = useRef();
+  const ang = useRef(0);
+  useFrame((_, dt) => {
+    const A = engine.eventAnim;
+    let want = 0;
+    if (A && A.id === 'door') want = A.resolved == null || engine.time - A.resolved < 2.5 ? -1.05 : 0;
+    ang.current += (want - ang.current) * Math.min(1, dt * 5);
+    if (ref.current) ref.current.rotation.y = ang.current;
+  });
+  return (
+    <group ref={ref} position={[0.85, 0, -0.9]}>
+      <mesh position={[-0.55, 0.85, -0.03]} castShadow>
+        <boxGeometry args={[1.1, 0.95, 0.06]} />
+        <meshStandardMaterial color={color} roughness={0.3} metalness={0.5} />
+      </mesh>
+      <mesh position={[-0.55, 1.22, -0.04]}>
+        <boxGeometry args={[0.9, 0.4, 0.05]} />
+        <meshStandardMaterial color="#22303b" roughness={0.15} metalness={0.4} />
+      </mesh>
+    </group>
+  );
 }

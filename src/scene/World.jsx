@@ -6,6 +6,7 @@ import { Road, Sidewalk, Planter, PowerLine, SidewalkProps, CrossingSign, Ground
 import { Vehicles, Signals, KidActor, CameraRig, Sun, GoalMarker, FlashTile } from './Dynamic.jsx';
 import { makeCoords } from './common.jsx';
 import { BikeActor, ParkedCars } from './BikeScene.jsx';
+import { ParentActor, BusStop, EventProps } from './EventScene.jsx';
 
 function EngineDriver({ engine }) {
   useFrame((_, dt) => engine.update(Math.min(dt, 0.05)));
@@ -77,6 +78,9 @@ export function World({ engine }) {
         ) : (
           <KidActor engine={engine} />
         )}
+        {engine.parent && <ParentActor engine={engine} />}
+        {engine.bus && <BusStop engine={engine} />}
+        {engine.events.length > 0 && <EventProps engine={engine} />}
         <GoalMarker engine={engine} />
         <FlashTile engine={engine} />
         <CameraRig engine={engine} />

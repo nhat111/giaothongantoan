@@ -60,3 +60,24 @@ function startAmbient() {
 export function setMuted(m) {
   if (ambient) ambient.gain.value = m ? 0 : 0.25;
 }
+
+// còi hú xe cứu thương
+export function siren(seconds = 4) {
+  if (!ctx) return;
+  const t0 = ctx.currentTime;
+  const o = ctx.createOscillator();
+  const g = ctx.createGain();
+  o.type = 'triangle';
+  for (let t = 0; t < seconds; t += 1) {
+    o.frequency.setValueAtTime(650, t0 + t);
+    o.frequency.linearRampToValueAtTime(980, t0 + t + 0.5);
+    o.frequency.linearRampToValueAtTime(650, t0 + t + 1);
+  }
+  g.gain.setValueAtTime(0, t0);
+  g.gain.linearRampToValueAtTime(0.12, t0 + 0.6);
+  g.gain.setValueAtTime(0.12, t0 + seconds - 0.8);
+  g.gain.linearRampToValueAtTime(0, t0 + seconds);
+  o.connect(g).connect(ctx.destination);
+  o.start(t0);
+  o.stop(t0 + seconds);
+}

@@ -124,10 +124,13 @@ export function Bus({ color, wheelRefs }) {
 }
 
 // Bé học sinh: áo trắng, quần xanh, khăn quàng đỏ, cặp sách. Mặt hướng về +z.
-export const Kid = forwardRef(function Kid({ legs, arms, head, helmet = false }, ref) {
+export const Kid = forwardRef(function Kid(
+  { legs, arms, head, helmet = false, shirtColor = '#fbfbf8', pantsColor = '#1f2f5c', scarf = true, bag = true, nonLa = false, longHair = false },
+  ref
+) {
   const skin = mat('#f0c39b');
-  const shirt = mat('#fbfbf8');
-  const pants = mat('#1f2f5c');
+  const shirt = mat(shirtColor);
+  const pants = mat(pantsColor);
   const red = mat('#d81e1e', { roughness: 0.6 });
   return (
     <group ref={ref}>
@@ -143,12 +146,16 @@ export const Kid = forwardRef(function Kid({ legs, arms, head, helmet = false },
       {/* thân */}
       <Box s={[0.32, 0.38, 0.2]} p={[0, 0.88, 0]} m={shirt} cast />
       {/* khăn quàng đỏ */}
+      {scarf && (
+        <>
       <mesh position={[0, 1.06, 0]} rotation={[Math.PI / 2, 0, 0]}>
         <torusGeometry args={[0.09, 0.025, 6, 14]} />
         <primitive object={red} attach="material" />
       </mesh>
       <Box s={[0.05, 0.16, 0.03]} p={[-0.03, 0.97, 0.11]} r={[0, 0, 0.25]} m={red} />
       <Box s={[0.05, 0.16, 0.03]} p={[0.03, 0.97, 0.11]} r={[0, 0, -0.25]} m={red} />
+        </>
+      )}
       {/* tay */}
       {[-0.21, 0.21].map((x, i) => (
         <group key={i} position={[x, 1.03, 0]} ref={arms[i]}>
@@ -157,14 +164,25 @@ export const Kid = forwardRef(function Kid({ legs, arms, head, helmet = false },
         </group>
       ))}
       {/* cặp sách */}
-      <RoundedBox args={[0.3, 0.36, 0.15]} radius={0.04} smoothness={2} position={[0, 0.9, -0.17]} material={mat('#2f6fd6', { roughness: 0.6 })} castShadow />
-      <Box s={[0.22, 0.12, 0.03]} p={[0, 0.82, -0.255]} m={mat('#f2c230')} />
+      {bag && (
+        <>
+          <RoundedBox args={[0.3, 0.36, 0.15]} radius={0.04} smoothness={2} position={[0, 0.9, -0.17]} material={mat('#2f6fd6', { roughness: 0.6 })} castShadow />
+          <Box s={[0.22, 0.12, 0.03]} p={[0, 0.82, -0.255]} m={mat('#f2c230')} />
+        </>
+      )}
       {/* đầu */}
       <group position={[0, 1.24, 0]} ref={head}>
         <mesh geometry={sphereGeo(0.15)} material={skin} castShadow />
         <mesh geometry={sphereGeo(0.158)} position={[0, 0.03, -0.025]} scale={[1, 0.92, 1]} material={mat('#2a1d14', { roughness: 0.9 })} />
         <mesh geometry={sphereGeo(0.02, 8, 6)} position={[-0.05, 0.0, 0.135]} material={mat('#111')} />
         <mesh geometry={sphereGeo(0.02, 8, 6)} position={[0.05, 0.0, 0.135]} material={mat('#111')} />
+        {longHair && <Box s={[0.26, 0.3, 0.08]} p={[0, -0.12, -0.12]} m={mat('#1b130d', { roughness: 0.9 })} />}
+        {nonLa && (
+          <mesh position={[0, 0.17, 0]} castShadow>
+            <coneGeometry args={[0.36, 0.2, 24, 1, true]} />
+            <meshStandardMaterial color="#e8d8a8" roughness={0.9} side={2} />
+          </mesh>
+        )}
         {helmet && (
           <group>
             <mesh geometry={HELMET_GEO} position={[0, 0.03, -0.01]} material={mat('#ff8a00', { roughness: 0.35 })} castShadow />

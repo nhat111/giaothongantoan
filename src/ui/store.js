@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { engine } from '../game/engine.js';
-import { honk } from './sound.js';
+import { honk, siren } from './sound.js';
 import { speak, isSpeechOn } from './speech.js';
 
 export const useGame = create(() => ({
@@ -15,7 +15,7 @@ export const useGame = create(() => ({
 
 let toastId = 0;
 engine.on((type, p) => {
-  if (type === 'level') useGame.setState({ levelIdx: p.idx, levelVersion: engine.levelVersion, overlay: 'intro', win: null, toast: null });
+  if (type === 'level') useGame.setState({ levelIdx: p.idx, levelVersion: engine.levelVersion, overlay: 'intro', win: null, toast: null, holding: false });
   if (type === 'stars') useGame.setState({ stars: p });
   if (type === 'toast') {
     useGame.setState({ toast: { ...p, id: ++toastId } });
@@ -23,6 +23,9 @@ engine.on((type, p) => {
   }
   if (type === 'win') useGame.setState({ overlay: 'win', win: p, toast: null });
   if (type === 'honk') honk();
+  if (type === 'hold') useGame.setState({ holding: p });
+  if (type === 'eventStart' && p === 'ambulance') siren(5);
+  if (type === 'eventAsk') useGame.setState({ overlay: 'event', eventId: p, toast: null });
 });
 
 engine.load(0);

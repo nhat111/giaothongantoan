@@ -28,6 +28,7 @@ const { LEVELS } = await import(path.join(root, 'src/game/levels.js'));
 const { MSG, LESSON } = await import(path.join(root, 'src/game/engine.js'));
 const { BIKE_MSG, BIKE_LESSON } = await import(path.join(root, 'src/game/bike.js'));
 const V = await import(path.join(root, 'src/ui/voiceText.js'));
+const { EVENTS } = await import(path.join(root, 'src/game/events.js'));
 
 // ---------- gom tất cả các câu ----------
 const texts = new Set();
@@ -51,6 +52,11 @@ LEVELS.forEach((L) => {
   } else add(V.walkIntroText(L));
 });
 add(V.menuText(LEVELS));
+Object.values(EVENTS).forEach((d) => {
+  add(V.eventText(d));
+  add(d.lesson);
+  d.choices.forEach((c) => add(c.why));
+});
 const max = LEVELS.length * 3;
 for (let s = 0; s <= 3; s++) {
   add(V.winText({ stars: s, lessons: [], last: false, total: 0, max }));

@@ -1,4 +1,5 @@
 import { LEVELS } from './levels.js';
+import { EVENTS, EVENT_LEAD } from './events.js';
 import { initBike, updateBike, bikeShift, bikeLook, bikeFinishLook, bikeSignal, bikeBlockS, checkPrep, BIKE_MSG, BIKE_LESSON } from './bike.js';
 
 export const TILE = 2.6; // mét mỗi ô
@@ -22,7 +23,9 @@ export const MSG = {
   nolook: 'Khoan! Trước khi sang đường phải dừng lại và nhìn hai bên. Nhấn Quan sát.',
   close: 'Xe đang tới gần! Chờ xe đi qua hẳn rồi mới bước tiếp.',
   runner: 'Đèn xanh nhưng có xe vượt đèn đỏ! Dù đèn xanh vẫn phải nhìn hai bên trước khi bước xuống.',
-  hit: 'Suýt va chạm! Bé quay lại vỉa hè. Chỉ đi khi không có xe tới gần.'
+  hit: 'Suýt va chạm! Bé quay lại vỉa hè. Chỉ đi khi không có xe tới gần.',
+  nohand: 'Bé mẫu giáo qua đường phải nắm tay người lớn. Nhấn nút Nắm tay mẹ.',
+  bus: 'Xe buýt đang đỗ che mất tầm nhìn, xe phía sau có thể vượt lên bất ngờ. Chờ xe buýt chạy đi rồi mới quan sát và sang đường.'
 };
 const WALK_HIT = MSG.hit;
 
@@ -33,7 +36,9 @@ export const LESSON = {
   nolook: 'Dừng lại, nhìn trái, nhìn phải trước khi sang đường.',
   close: 'Chờ xe đi qua hẳn rồi mới đi.',
   runner: 'Đèn xanh vẫn phải quan sát, vì có người vượt đèn đỏ.',
-  hit: 'Không sang đường khi xe đang tới gần.'
+  hit: 'Không sang đường khi xe đang tới gần.',
+  nohand: 'Trẻ dưới 7 tuổi qua đường phải có người lớn dắt tay.',
+  bus: 'Xuống xe buýt: chờ xe buýt chạy đi rồi mới sang đường.'
 };
 
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -99,7 +104,7 @@ export class Engine {
     let start;
     this.grid.forEach((row, rr) =>
       row.forEach((t, cc) => {
-        if (t === 'H') start = { c: cc, r: rr };
+        if (t === 'H' || t === 'A') start = { c: cc, r: rr };
         if (t === 'S') this.goal = { c: cc, r: rr };
       })
     );
@@ -123,6 +128,21 @@ export class Engine {
     this.running = false;
     this.held = null;
     this.mode = L.mode || 'walk';
+    this.events = (L.events || []).map((e) => ({ ...e, done: false }));
+    this.event = null;
+    this.eventAnim = null;
+    this.parent = L.withParent ? { c: start.c, r: start.r, pc: start.c, pr: start.r, t: 1 } : null;
+    this.holding = false;
+    this.bus = null;
+    if (L.busStop) {
+      const lane = this.lanes.find((l) => l.dir === 1);
+      this.bus = {
+        id: ++this.vid, lane, type: 'bus', len: 4.3, s: lane.road.zc - 0.35 + EXT, v: 0, speed: 2.1,
+        color: '#2f9a57', seed: 0.5, runner: false, dist: 0, hold: true, holdUntil: Infinity, stopBus: true
+      };
+      lane.vs.push(this.bus);
+      this.busGoneSaid = false;
+    }
     this.bike = this.mode === 'bike' ? initBike(this) : null;
     for (let k = 0; k < 400; k++) this.stepTraffic(0.05);
     this.levelVersion++;
@@ -144,6 +164,7 @@ export class Engine {
 
   start() {
     this.running = true;
+    if (this.bus) this.bus.holdUntil = this.time + this.level.busStop.wait;
     this.toast(this.level.goal, '', 5);
   }
 
@@ -202,6 +223,7 @@ export class Engine {
         let limit = Infinity;
         if (i > 0) limit = vs[i - 1].s - vs[i - 1].len - 0.35;
         const stopHere = (redStop && !v.runner) || kidStop;
+        if (v.hold && this.time < v.holdUntil) limit = Math.min(limit, v.s);
         if (stopHere && v.s <= lane.stopS + 0.05) limit = Math.min(limit, lane.stopS);
         if (bikeS !== null && v.s <= bikeS + 0.05) limit = Math.min(limit, bikeS);
         const room = limit - v.s;
@@ -333,6 +355,16 @@ export class Engine {
       const lane = this.laneByRow[nr];
       const road = lane.road;
       if (cur !== 'z') {
+        if (this.parent && !this.holding) {
+          this.emit('flash', { c: nc, r: nr });
+          this.penalty('nohand', false);
+          return;
+        }
+        if (this.busHeld() && this.bus.lane.road === road) {
+          this.emit('flash', { c: nc, r: nr });
+          this.penalty('bus', false);
+          return;
+        }
         if (road.signaled) {
           const st = this.lightState(road);
           if (st.ped === 'red') {
@@ -357,12 +389,26 @@ export class Engine {
         return;
       }
     }
+    if (this.parent) {
+      const p = this.parent;
+      p.pc = p.c;
+      p.pr = p.r;
+      // đang nắm tay: mẹ đi cạnh bé; không nắm tay: mẹ đi theo sau một bước
+      if (this.holding) {
+        p.c = nc;
+        p.r = nr;
+      } else {
+        p.c = k.c;
+        p.r = k.r;
+      }
+      p.t = 0;
+    }
     k.pc = k.c;
     k.pr = k.r;
     k.c = nc;
     k.r = nr;
     k.t = 0;
-    if (t === '.' || t === 'H') {
+    if (t === '.' || t === 'H' || t === 'A') {
       k.lastSafe = { c: nc, r: nr };
       if (cur === 'z') this.look = null;
     }
@@ -381,12 +427,81 @@ export class Engine {
       const key = road.index + ':' + st + ':' + this.kid.r;
       if (this.hinted.has(key)) return;
       this.hinted.add(key);
-      if (road.signaled && st !== 'green')
+      if (this.busHeld() && this.bus.lane.road === road)
+        this.toast('Xe buýt còn đang đỗ, che mất xe phía sau. Đứng chờ trên vỉa hè cho xe buýt đi đã.');
+      else if (this.parent && !this.holding)
+        this.toast('Đến vạch kẻ rồi. Nhấn nút Nắm tay mẹ, rồi cùng mẹ sang đường.');
+      else if (road.signaled && st !== 'green')
         this.toast('Đèn người đi bộ chưa xanh. Đứng chờ ở đây, nhìn số đếm ngược trên cột đèn bên kia đường.');
       else if (road.signaled)
         this.toast('Đèn xanh rồi. Nhấn Quan sát để nhìn hai bên cho chắc, rồi đi thẳng qua vạch kẻ.', 'good');
       else this.toast('Đường này không có đèn. Dừng lại và nhấn Quan sát trước khi đi.');
     });
+  }
+
+  busHeld() {
+    return !!(this.bus && this.bus.hold && this.time < this.bus.holdUntil);
+  }
+
+  // bé mẫu giáo nắm / buông tay mẹ
+  holdHand() {
+    if (!this.parent || !this.running) return;
+    const t = this.tile(this.kid.c, this.kid.r);
+    if (this.holding && (t === 'z' || t === 'r')) {
+      this.toast('Đang qua đường, bé không buông tay mẹ nhé.');
+      return;
+    }
+    this.holding = !this.holding;
+    if (this.holding) {
+      const p = this.parent;
+      p.pc = p.c;
+      p.pr = p.r;
+      p.c = this.kid.c;
+      p.r = this.kid.r;
+      p.t = 0;
+    }
+    this.toast(this.holding ? 'Bé nắm tay mẹ rồi.' : 'Bé buông tay mẹ.', this.holding ? 'good' : '', 2);
+    this.emit('hold', this.holding);
+  }
+
+  // ---------- tình huống bất ngờ ----------
+  checkEvents() {
+    if (this.event || !this.running) return;
+    for (const e of this.events) {
+      if (e.done) continue;
+      const hit = this.bike ? this.bike.x >= e.x : e.c === this.kid.c && e.r === this.kid.r && this.kid.t >= 1;
+      if (hit) return this.startEvent(e);
+    }
+  }
+  startEvent(e) {
+    e.done = true;
+    const def = EVENTS[e.id];
+    this.event = { ...e, def, start: this.time, asked: false };
+    this.eventAnim = { id: e.id, start: this.time, resolved: null, e };
+    this.running = false;
+    this.release();
+    if (this.bike) this.bike.speed = 0;
+    if (e.id === 'ambulance') {
+      const road = this.roads[e.road || 0];
+      road.light = { green: true, t: GREEN_TIME + 2 };
+    }
+    this.emit('eventStart', e.id);
+  }
+  resolveEvent(i) {
+    const ev = this.event;
+    if (!ev) return;
+    const ch = ev.def.choices[i];
+    if (ch.good) this.toast(ch.why, 'good', 4);
+    else {
+      this.stars = Math.max(0, this.stars - 1);
+      this.mistakes.add('ev:' + ev.id);
+      this.emit('stars', this.stars);
+      this.toast(ch.why, 'bad', 5);
+    }
+    this.eventAnim.resolved = this.time;
+    this.event = null;
+    this.running = true;
+    this.busyUntil = this.time + 0.6;
   }
 
   doLook() {
@@ -446,7 +561,9 @@ export class Engine {
     }
     this.emit('win', {
       stars: this.stars,
-      lessons: [...this.mistakes].map((m) => (this.bike ? BIKE_LESSON[m] || LESSON[m] : LESSON[m])),
+      lessons: [...this.mistakes].map((m) =>
+        m.startsWith('ev:') ? EVENTS[m.slice(3)].lesson : this.bike ? BIKE_LESSON[m] || LESSON[m] : LESSON[m]
+      ),
       last: this.levelIdx === LEVELS.length - 1,
       total: this.totalStars.reduce((a, b) => a + (b || 0), 0),
       max: LEVELS.length * 3
@@ -466,6 +583,16 @@ export class Engine {
       else this.finishLook(this.pendingLook.road);
       this.pendingLook = null;
     }
+    if (this.parent && this.parent.t < 1) this.parent.t = Math.min(1, this.parent.t + dt / STEP_TIME);
+    if (this.event && !this.event.asked && this.time - this.event.start >= EVENT_LEAD) {
+      this.event.asked = true;
+      this.emit('eventAsk', this.event.id);
+    }
+    if (this.bus && !this.busGoneSaid && this.running && this.time > this.bus.holdUntil + 2.5) {
+      this.busGoneSaid = true;
+      this.toast('Xe buýt đã chạy đi. Bây giờ bé quan sát hai bên rồi mới sang đường.', 'good');
+    }
+    this.checkEvents();
     if (this.bike) {
       updateBike(this, dt, EXT);
       return;

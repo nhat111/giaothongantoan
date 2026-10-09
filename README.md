@@ -12,6 +12,10 @@ vỉa hè, nhà ống, xe máy, đèn tín hiệu có đếm ngược, vạch k�
 | 3 | Cả đoạn đường đến trường | Kết hợp cả hai, và vẫn phải quan sát khi đèn xanh vì có xe vượt đèn đỏ |
 | 4 | Đi xe đạp: sát lề phải, dừng đèn đỏ | Chuẩn bị trước khi đi (mũ bảo hiểm, kiểm tra phanh, không đeo tai nghe, không chở quá một người), đi sát lề phải, dừng trước vạch khi đèn đỏ hoặc vàng |
 | 5 | Đi xe đạp: tránh xe đỗ, xin đường rẽ | Quan sát phía sau trước khi ra giữa làn tránh xe đỗ, vào lại sát lề, không sang làn ngược chiều, giơ tay xin rẽ và đi chậm trước khi rẽ |
+| 6 | Đi bộ: những tình huống bất ngờ | Xe máy lùi ra từ cổng nhà, bạn gọi bên kia đường, bóng lăn ra lòng đường, xe cứu thương hú còi khi đèn xanh: bé chọn cách xử lý |
+| 7 | Bé mẫu giáo: nắm tay mẹ qua đường | Trẻ dưới 7 tuổi qua đường phải có người lớn dắt tay: nhấn Nắm tay mẹ trước khi xuống lòng đường |
+| 8 | Xuống xe buýt rồi sang đường | Không đi vòng trước / sau xe buýt đang đỗ, chờ xe buýt đi rồi quan sát và sang ở vạch kẻ |
+| 9 | Đi xe đạp: những tình huống bất ngờ | Cửa ô tô mở bất ngờ, ổ gà đầy nước, chó chạy ra trước xe; chuẩn bị: áo sáng màu, không cầm ô khi đạp xe |
 
 Nút **Quan sát** chuyển camera sang góc mắt của bé và quay trái, rồi quay phải, để bé tập thói quen nhìn hai bên như ngoài đường thật.
 Bé sai luật thì bị trừ sao và nhận lời nhắc; không có cảnh tai nạn.
@@ -83,6 +87,9 @@ Thêm bài mới: thêm một phần tử vào `LEVELS` trong `src/game/levels.j
 | `H` | Cửa nhà bé (điểm xuất phát) |
 | `S` | Cổng trường (đích) |
 | `p` | Dải cây xanh |
+| `A` | Điểm xuất phát trên vỉa hè (bài xuống xe buýt) |
+
+Tình huống bất ngờ: định nghĩa trong `src/game/events.js` (câu hỏi, lựa chọn, lời giải thích), gắn vào bài bằng `events: [{ id, c, r }]` (đi bộ) hoặc `events: [{ id, x }]` (xe đạp).
 
 Toàn bộ mô hình 3D (nhà, xe, bé) được dựng bằng code, không dùng file mô hình bên ngoài,
 nên có thể thay bằng mô hình .glb chi tiết hơn sau này.
