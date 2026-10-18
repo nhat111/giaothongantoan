@@ -424,10 +424,22 @@ export function BuildingRow({ engine, row }) {
   const ref = useRef();
   useFrame((state, dt) => {
     const g = ref.current;
-    if (!g || low) return;
-    const camZ = state.camera.position.z;
-    const behind = facing === -1 ? camZ > frontZ + 0.3 : camZ < frontZ - 0.3;
-    const target = behind && state.camera.position.y > 2.5 ? 0.015 : 1;
+    if (!g) return;
+    const cam = state.camera.position;
+    let target;
+    if (low) {
+      // Nhà cấp 4: chỉ hạ xuống khi mái hiên / nóc mái chắn tia nhìn từ camera tới bé.
+      // Lấy điểm lùi 1,2 m về phía camera so với chân bé để chừa khoảng vỉa hè quanh bé.
+      const k = engine.kid;
+      const kz = wz(k.pr + (k.r - k.pr) * Math.min(1, k.t) + 0.5) + 1.2;
+      const dz = cam.z - kz;
+      const at = (z) => 0.2 + ((cam.y - 0.2) * (z - kz)) / dz;
+      const blocked = dz > 0.5 && cam.y > 2.5 && (at(frontZ) < 3.6 || at(frontZ + 4.5) < 5.6);
+      target = blocked ? 0.015 : 1;
+    } else {
+      const behind = facing === -1 ? cam.z > frontZ + 0.3 : cam.z < frontZ - 0.3;
+      target = behind && cam.y > 2.5 ? 0.015 : 1;
+    }
     g.scale.y += (target - g.scale.y) * (1 - Math.exp(-dt * 10));
   });
 

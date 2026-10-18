@@ -22,9 +22,9 @@ Bé sai luật thì bị trừ sao và nhận lời nhắc; không có cảnh ta
 
 ## Điều khiển
 
-- Máy tính: phím mũi tên (hoặc W A S D) để đi, phím cách (Space) để quan sát.
+- Máy tính: phím mũi tên (hoặc W A S D) để đi, phím cách (Space) hoặc Enter để quan sát, H để nắm tay mẹ (bài 7).
 - Điện thoại / máy tính bảng: nút mũi tên ở góc trái dưới, nút **Quan sát** ở góc phải dưới.
-- Bài xe đạp: → đạp, ← bóp phanh, ↑ ra giữa làn, ↓ vào sát lề (hoặc rẽ vào cổng), Space quan sát phía sau, X xin rẽ phải.
+- Bài xe đạp: → đạp, ← bóp phanh, ↑ ra giữa làn, ↓ vào sát lề (hoặc rẽ vào cổng), Space hoặc Enter quan sát phía sau, X xin rẽ phải.
 
 Ghi chú về luật: theo Luật Trật tự, an toàn giao thông đường bộ 2024, người đi xe đạp chỉ được chở một người
 (thêm một trẻ dưới 7 tuổi thì tối đa hai), phải đi hàng một, đi bên phải, không buông cả hai tay, không dùng điện thoại khi đang đi.

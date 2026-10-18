@@ -174,15 +174,25 @@ export function Controls() {
   const bike = L.mode === 'bike';
   useEffect(() => {
     const keys = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0], w: [0, -1], s: [0, 1], a: [-1, 0], d: [1, 0] };
+    // Space hoặc Enter: quan sát. Khi đang mở bảng (hướng dẫn, chọn bài, tình huống) thì để
+    // Space / Enter bấm nút đang chọn như bình thường.
+    const isLook = (e) => e.code === 'Space' || e.key === ' ' || e.key === 'Spacebar' || e.key === 'Enter';
     const down = (e) => {
       unlockAudio();
-      if (e.key === ' ') {
+      if (useGame.getState().overlay) return;
+      if (isLook(e)) {
+        // chặn trình duyệt bấm lại nút đang được chọn (vd. Chơi lại bài) bằng Space / Enter
         e.preventDefault();
-        engine.doLook();
+        if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
+        if (!e.repeat) engine.doLook();
         return;
       }
       if (e.key === 'x' || e.key === 'X') {
         engine.signal();
+        return;
+      }
+      if (e.key === 'h' || e.key === 'H') {
+        engine.holdHand();
         return;
       }
       const k = keys[e.key] || keys[e.key.toLowerCase()];
@@ -192,6 +202,7 @@ export function Controls() {
       engine.press(k[0], k[1]);
     };
     const up = (e) => {
+      if (isLook(e) && !useGame.getState().overlay) e.preventDefault();
       const k = keys[e.key] || keys[e.key.toLowerCase()];
       if (k) engine.release(k[0], k[1]);
     };
@@ -239,6 +250,7 @@ export function Controls() {
           <span className="ico" aria-hidden="true">👀</span>
           Quan sát
           <small>{bike ? 'nhìn phía sau' : 'nhìn trái, nhìn phải'}</small>
+          <kbd className="key-hint">Space / Enter</kbd>
         </button>
         {L.withParent && <HandButton />}
         {bike && L.turnIntoGate && (
@@ -351,7 +363,7 @@ function PrepIntro({ L }) {
           ))}
         </ol>
         <p className="keys">
-          Máy tính: → đạp, ← phanh, ↑ ra giữa làn, ↓ vào sát lề{L.turnIntoGate ? ' / rẽ vào cổng' : ''}, Space quan sát phía sau
+          Máy tính: → đạp, ← phanh, ↑ ra giữa làn, ↓ vào sát lề{L.turnIntoGate ? ' / rẽ vào cổng' : ''}, Space hoặc Enter quan sát phía sau
           {L.turnIntoGate ? ', X xin rẽ phải' : ''}. Điện thoại: dùng các nút trên màn hình.
         </p>
         <button
@@ -389,7 +401,7 @@ function WalkIntro({ L }) {
         </ol>
         <p className="keys">{PARENT_NOTE}</p>
         <p className="keys">
-          Máy tính: phím mũi tên để đi, phím cách (Space) để quan sát. Điện thoại, máy tính bảng: dùng các nút ở góc dưới màn hình.
+          Máy tính: phím mũi tên để đi, phím cách (Space) hoặc Enter để quan sát{L.withParent ? ', phím H để nắm tay mẹ' : ''}. Điện thoại, máy tính bảng: dùng các nút ở góc dưới màn hình.
         </p>
         <button
           className="primary"
