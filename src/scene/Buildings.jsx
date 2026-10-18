@@ -269,7 +269,7 @@ function HomeHouse({ x, w }) {
 // Trường tiểu học: tường rào, cổng có bảng tên, sân trường, dãy lớp học 3 tầng màu vàng, cột cờ.
 function School({ x, w }) {
   const sign = useMemo(
-    () => textTexture('schoolsign', 'TRƯỜNG TIỂU HỌC HÒA BÌNH', { w: 1024, h: 180, bg: '#b3121b', fg: '#ffe14d', font: 70, sub: 'Dạy tốt - Học tốt' }),
+    () => textTexture('schoolsign', 'TRƯỜNG TIỂU HỌC NGÔ MÂY', { w: 1024, h: 180, bg: '#b3121b', fg: '#ffe14d', font: 70, sub: 'Dạy tốt - Học tốt' }),
     []
   );
   const flag = useMemo(() => flagTexture(), []);
